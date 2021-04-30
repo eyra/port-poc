@@ -1,2 +1,1 @@
-
-*.pyc
+data_extractor/tests/data/BrowserHistory.json
