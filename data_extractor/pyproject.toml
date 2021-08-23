@@ -10,6 +10,7 @@ pandas = "^1.2.4"
 pylint = "^2.8.2"
 Faker = "^8.11.0"
 numpy = "^1.21.1"
+geopy = "^2.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
