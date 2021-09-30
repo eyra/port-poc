@@ -26,9 +26,9 @@ function will be displayed after a while (depending on the amount of
 processing required and the speed of the machine).
 
 # Google Semantic Location History 
-In this example, we first create simulated Google Semantic Location History
-(GSLH) data and then extract relevant information from the simulated
-data.
+In this example, we first create a simulated Google Semantic Location History
+(GSLH) data download package (DDP). Subsequently, we extract relevant information
+from the simulated DDP.
 
 ## Data simulation
 Command:
@@ -69,8 +69,8 @@ data extraction script in the web application, one needs to specify this
 in `pyworker.js`.
 
 # Google Search History
-Here, we extract relevant information from simulated Google Search
-History (GSH).
+In this example, we first create a simulated Google Search History
+(GSH) DDP. Subsequently, we extract relevant information from the simulated DDP.
 
 ## Data simulation
 Command:
@@ -78,32 +78,30 @@ Command:
 `poetry run python google_search_history/simulation_gsh.py`
 
 This will generate a dummy Google Takeout ZIP file, containing a
-simulated BrowserHistory.JSON file. This file mainly describes what
+simulated BrowserHistory.json file, and stores it in `tests/data/takeout.zip`.
+
+The BrowserHistory.json file mainly describes what 
 websites were visited by the user and when. To simulate (news) web
 pages, you can either base them on real URLs (see
 tests/data/urldata.csv) or create entirely fake ones using
-[Faker](<https://github.com/joke2k/faker>). The timetamp of each web
+[Faker](<https://github.com/joke2k/faker>). The timestamp of each web
 visit is set to be before, during, or after a certain period (in this
 case, the Dutch COVID-19 related curfew), and is randomly generated
 using the [datetime](<https://docs.python.org/3/library/datetime.html>)
 and [random](<https://docs.python.org/3/library/random.html>) libraries.
 
-Running the simulation\_gsh.py code will create a Google Search History
-file in the same compressed file structure as it would occur in an
-actual Google Takeout data download package:
-`takeout.ZIP/Takeout/Chrome/BrowserHistory.JSON`. For this project, the
-takeout ZIP file will be created in the `tests/data` folder.
-
 Note that, even though the script is seeded and will, therefore, always
 yield the same outcome, there are various options to adapt the output
-depending on your personal (research) goal. These options are: \* n:
-integer, size of BrowserHistory.json (i.e., number of web visits).
-Default = 1000, \* site\_diff: float, percentage of generated websites
-that should be 'news' sites. Default = 0.15, \* time\_diff: float,
-minimal percentage of web searchers that were specifically made in the
-evening during the curfew period. Default = 0.20, \* seed: integer, sets
-seed. Default = 0, \* fake: boolean, determines if URLs are based on
-true URLs (False) or entirely fake (True). Default = False
+depending on your personal (research) goal. These options are: 
+- n: integer, size of BrowserHistory.json (i.e., number of web visits).
+Default = 1000, 
+- site_diff: float, percentage of generated websites that should be 'news' 
+sites. Default = 0.15, 
+- time_diff: float, minimal percentage of web searchers that were specifically 
+made in the evening during the curfew period. Default = 0.20, 
+- seed: integer, sets seed. Default = 0, 
+- fake: boolean, determines if URLs are based on true URLs (False) or entirely 
+fake (True). Default = False
 
 ## Data extraction
 Command:

@@ -9,7 +9,7 @@ API's of the web-browser have been wrapped so that the Python code does not
 need to be aware of running in a web-browser.
 
 Example code for the Python part of the project is provided in the
-[data_extractor](data_extractor/) folder. This also contains a [README](data_extractor/README.rst) 
+[data_extractor](data_extractor/) folder. This also contains a [README](data_extractor/README.md) 
 which explains how to modify this code and presents two examples of data extraction scripts,
 namely for Google semantic location history and Google search history data.
 
