@@ -1,5 +1,4 @@
 # Eyra Port POC
-
 This proof-of-concept shows how Python can be used, from within a web-browser,
 to extract data for research purposes. The end-user (data donator) needs only
 to have a modern web-browser.
