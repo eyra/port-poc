@@ -1,4 +1,6 @@
 # Eyra Port POC
+
+## Description
 This proof-of-concept shows how Python can be used, from within a web-browser,
 to extract data for research purposes. The end-user (data donator) needs only
 to have a modern web-browser.
@@ -21,7 +23,7 @@ This launches a web-server that can be accessed on
 [http://localhost:8000](http://localhost:8000).
 
 
-# Contributors
+## Contributors
 Port POC is developed by [Eyra](https://github.com/eyra). The example data extraction scripts for 
 Google semantic location history and Google search history data packages are developed by the 
 [Research Enngineering team](https://github.com/orgs/UtrechtUniversity/teams/research-engineering) of Utrecht University.

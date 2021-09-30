@@ -93,15 +93,15 @@ and [random](<https://docs.python.org/3/library/random.html>) libraries.
 Note that, even though the script is seeded and will, therefore, always
 yield the same outcome, there are various options to adapt the output
 depending on your personal (research) goal. These options are: 
-- n: integer, size of BrowserHistory.json (i.e., number of web visits).
-Default = 1000, 
-- site_diff: float, percentage of generated websites that should be 'news' 
-sites. Default = 0.15, 
-- time_diff: float, minimal percentage of web searchers that were specifically 
-made in the evening during the curfew period. Default = 0.20, 
-- seed: integer, sets seed. Default = 0, 
-- fake: boolean, determines if URLs are based on true URLs (False) or entirely 
-fake (True). Default = False
+- *n*: integer, size of BrowserHistory.json (i.e. number of web visits).
+Default=1000, 
+- *site_diff*: float, percentage of generated websites that should be 'news' 
+sites. Default=0.15, 
+- *time_diff*: float, minimal percentage of web searchers that were specifically 
+made in the evening during the curfew period. Default=0.20, 
+- *seed*: integer, sets seed. Default=0, 
+- *fake*: boolean, determines if URLs are based on true URLs (False) or entirely 
+fake (True). Default=False
 
 ## Data extraction
 Command:
