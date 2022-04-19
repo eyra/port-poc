@@ -9,8 +9,8 @@ import os
 import re
 from datetime import datetime
 import pandas as pd
-#import advertools as adv
-#import hashlib
+import hashlib
+
 
 URL_PATTERN = r'(https?://\S+)'
 LOCATION_PATTERN = r'(Location: https?://\S+)'
@@ -359,9 +359,10 @@ def df_participants_features(df_chat):
     df_participants[COLNAMES_DF.IN_DEGREE] = _add_in_degree(response_matrix, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_NO] = _add_emoji_counts(df_chat, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_Fav] = _add_emoji_fav(df_chat, df_participants)
-    # df_participants[COLNAMES_DF.USERNAME] = _hash_participants(df_participants, COLNAMES_DF.USERNAME)
-    # df_participants[COLNAMES_DF.REPLY_2USER] = _hash_participants(df_participants, COLNAMES_DF.REPLY_2USER)
-    # df_participants[COLNAMES_DF.USER_REPLY2] = _hash_participants(df_participants, COLNAMES_DF.USER_REPLY2)
+    salt = _make_salt()
+    df_participants[COLNAMES_DF.USERNAME] = _anonymize_participants(df_participants, COLNAMES_DF.USERNAME, salt)
+    df_participants[COLNAMES_DF.REPLY_2USER] = _anonymize_participants(df_participants, COLNAMES_DF.REPLY_2USER, salt)
+    df_participants[COLNAMES_DF.USER_REPLY2] = _anonymize_participants(df_participants, COLNAMES_DF.USER_REPLY2, salt)
 
     return df_participants
 
@@ -487,15 +488,20 @@ def _get_in_degree(response_matrix, user):
 # def _add_emoji_fav(df_chat, df_participants):
 #     return df_participants[COLNAMES_DF.USERNAME].apply(lambda u: _get_fav_emoji(df_chat, u))
 
-#
-# def _hash_txt(txt):
-#     message = txt.encode()
-#     return hashlib.shake_256(message).hexdigest(4)
-#
-#
-# def _hash_participants(df_participants, col_name):
-#     return df_participants[col_name].apply(lambda u: _hash_txt(u))
+def _make_salt():
+    """
+    Generate a unique string to add to the anonymization function
+    Returns:
+        String
+    """
+    return os.urandom(32)
 
+def _anonym_txt(txt, salt):
+    anonymized_txt =  hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
+    return anonymized_txt
+
+def _anonymize_participants(df_participants, col_name, salt):
+    return df_participants[col_name].apply(lambda u: _anonym_txt(u,salt))
 
 def process(file_data):
     hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
