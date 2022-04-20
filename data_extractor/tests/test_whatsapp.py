@@ -17,25 +17,40 @@ from pandas.testing import assert_series_equal
 DATA_PATH = Path(__file__).parent / "data"
 
 EXPECTED = [
-    {'username': 'user1', 'message_no': 2, 'total_words_no': 3, 'reply_2_user': 'user2', 'user_reply2': 'user2',
-     'url_no': 0, 'location_no': 1, 'file_no': 0, 'out_degree': 2, 'in_degree': 2},
-    {'username': 'user2', 'message_no': 2, 'total_words_no': 1, 'reply_2_user': 'user1', 'user_reply2': 'user3',
+    {'username': 'user1', 'message_no': 3, 'total_words_no': 17, 'reply_2_user': 'user2', 'user_reply2': 'user2',
+     'url_no': 0, 'location_no': 1, 'file_no': 0, 'out_degree': 2, 'in_degree': 3},
+    {'username': 'user2', 'message_no': 3, 'total_words_no': 14, 'reply_2_user': 'user1', 'user_reply2': 'user3',
      'url_no': 2, 'location_no': 0, 'file_no': 0, 'out_degree': 3, 'in_degree': 3},
-    {'username': 'user3', 'message_no': 1, 'total_words_no': 1, 'reply_2_user': 'user2', 'user_reply2': '', 'url_no': 0,
+    {'username': 'user3', 'message_no': 1, 'total_words_no': 1, 'reply_2_user': 'user2', 'user_reply2': 'user3',
+     'url_no': 0,
      'location_no': 0, 'file_no': 0, 'out_degree': 1, 'in_degree': 1},
-    {'username': 'user4', 'message_no': 1, 'total_words_no': 7, 'reply_2_user': '', 'user_reply2': '', 'url_no': 0,
+    {'username': 'user4', 'message_no': 2, 'total_words_no': 21, 'reply_2_user': 'user1', 'user_reply2': 'user4',
+     'url_no': 0,
      'location_no': 0, 'file_no': 0, 'out_degree': 2, 'in_degree': 1}
 ]
 
 df_expected = pd.DataFrame(EXPECTED)
 
+# import zipfile
+# import re
+# from data_extractor.whatsapp import df_from_txt_whatsapp
+# hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
+# zfile = zipfile.ZipFile(DATA_PATH.joinpath("chat.zip").open("rb"))
+# for name in zfile.namelist():
+#     if re.search('chat.txt', name):
+#         text = zfile.read(name).decode("utf-8")
+#         df_chat = df_from_txt_whatsapp(text, hformats=hformats)
+#         df_chat.to_csv('df_chat.csv', index=False)
+
 
 def test_process():
-    result = process(DATA_PATH.joinpath("chat.zip").open("rb"))
-    assert len(result) == 1
-    assert result[0]["id"] == 'overview'
-    assert result[0]["title"] == 'The following files where read:'
-    assert_frame_equal(result[0]["data_frame"], df_expected)
+    result = process(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))
+    print(result[0]["data_frame"])
+
+    # assert len(result) == 1
+    # assert result[0]["id"] == 'overview'
+    # assert result[0]["title"] == 'The following files where read:'
+    # assert_frame_equal(result[0]["data_frame"], df_expected)
 
 
 def test_get_df_participants():
@@ -122,13 +137,13 @@ def test_add_in_degree():
 
 
 if __name__ == '__main__':
-    # test_process()
+    test_process()
     # test_get_df_participants()
     # test_add_total_words_no()
     # test_add_replies2user()
     # # test_add_userreplies2() # To be fixed...
     # test_add_pattern_no()
     # # test_add_out_degree() # To be fixed...
-    test_add_in_degree()
+    # test_add_in_degree()
 
 # TODO Consider Salt in the hashing function to be a fix string for reproducibility
