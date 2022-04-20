@@ -359,10 +359,10 @@ def df_participants_features(df_chat):
     df_participants[COLNAMES_DF.IN_DEGREE] = _add_in_degree(response_matrix, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_NO] = _add_emoji_counts(df_chat, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_Fav] = _add_emoji_fav(df_chat, df_participants)
-    salt = _make_salt()
-    df_participants[COLNAMES_DF.USERNAME] = _anonymize_participants(df_participants, COLNAMES_DF.USERNAME, salt)
-    df_participants[COLNAMES_DF.REPLY_2USER] = _anonymize_participants(df_participants, COLNAMES_DF.REPLY_2USER, salt)
-    df_participants[COLNAMES_DF.USER_REPLY2] = _anonymize_participants(df_participants, COLNAMES_DF.USER_REPLY2, salt)
+    # salt = _make_salt()
+    # df_participants[COLNAMES_DF.USERNAME] = _anonymize_participants(df_participants, COLNAMES_DF.USERNAME, salt)
+    # df_participants[COLNAMES_DF.REPLY_2USER] = _anonymize_participants(df_participants, COLNAMES_DF.REPLY_2USER, salt)
+    # df_participants[COLNAMES_DF.USER_REPLY2] = _anonymize_participants(df_participants, COLNAMES_DF.USER_REPLY2, salt)
 
     return df_participants
 
