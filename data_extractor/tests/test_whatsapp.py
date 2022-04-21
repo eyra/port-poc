@@ -8,6 +8,7 @@ from data_extractor.whatsapp import _add_pattern_no
 from data_extractor.whatsapp import _add_out_degree
 from data_extractor.whatsapp import _add_in_degree
 
+
 from pathlib import Path
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -31,26 +32,14 @@ EXPECTED = [
 
 df_expected = pd.DataFrame(EXPECTED)
 
-# import zipfile
-# import re
-# from data_extractor.whatsapp import df_from_txt_whatsapp
-# hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
-# zfile = zipfile.ZipFile(DATA_PATH.joinpath("chat.zip").open("rb"))
-# for name in zfile.namelist():
-#     if re.search('chat.txt', name):
-#         text = zfile.read(name).decode("utf-8")
-#         df_chat = df_from_txt_whatsapp(text, hformats=hformats)
-#         df_chat.to_csv('df_chat.csv', index=False)
-
 
 def test_process():
     result = process(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))
-    print(result[0]["data_frame"])
 
-    # assert len(result) == 1
-    # assert result[0]["id"] == 'overview'
-    # assert result[0]["title"] == 'The following files where read:'
-    # assert_frame_equal(result[0]["data_frame"], df_expected)
+    assert len(result) == 1
+    assert result[0]["id"] == 'overview'
+    assert result[0]["title"] == 'The following files where read:'
+    assert_frame_equal(result[0]["data_frame"], df_expected)
 
 
 def test_get_df_participants():
@@ -138,7 +127,7 @@ def test_add_in_degree():
 
 if __name__ == '__main__':
     test_process()
-    # test_get_df_participants()
+#     test_get_df_participants()
     # test_add_total_words_no()
     # test_add_replies2user()
     # # test_add_userreplies2() # To be fixed...
@@ -146,4 +135,3 @@ if __name__ == '__main__':
     # # test_add_out_degree() # To be fixed...
     # test_add_in_degree()
 
-# TODO Consider Salt in the hashing function to be a fix string for reproducibility
