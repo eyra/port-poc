@@ -16,9 +16,11 @@ URL_PATTERN = r'(https?://\S+)'
 LOCATION_PATTERN = r'(Location: https?://\S+)'
 FILE_PATTERN = r'(<attached: \S+>)'
 
+
 class RegexError(Exception):
     """Raised when regex match is not possible."""
     pass
+
 
 class ColnamesDf:
     """Access class constants using variable ``utils.COLNAMES_DF``.
@@ -77,9 +79,10 @@ class ColnamesDf:
     EMOJI_Fav = 'emoji_fav'
     """Favorite emojies column"""
 
+
 COLNAMES_DF = ColnamesDf()
 
-######### parsing functions #####################
+# ***** parsing functions *****
 regex_simplifier = {
     '%Y': r'(?P<year>\d{2,4})',
     '%y': r'(?P<year>\d{2,4})',
@@ -93,6 +96,7 @@ regex_simplifier = {
     '%p': r'(?P<ampm>[AaPp].? ?[Mm].?)',
     '%name': fr'(?P<{COLNAMES_DF.USERNAME}>[^:]*)'
 }
+
 
 def df_from_txt_whatsapp(text, hformats=None, encoding='utf-8'):
     """Load chat as a DataFrame.
@@ -135,6 +139,7 @@ def df_from_txt_whatsapp(text, hformats=None, encoding='utf-8'):
              return df
     print("hformats did not match the provided text. No match was found")
     return None
+
 
 def generate_regex(hformat):
     r"""Generate regular expression from hformat.
@@ -199,6 +204,7 @@ def _df_from_str(text,  hformat=None):
     except:
         pass
     return None
+
 
 def _parse_chat(text, regex):
     """Parse chat using given regex.
@@ -340,35 +346,54 @@ def _get_message(text, headers, i):
     msg = text[msg_start:msg_end].strip()
     return msg
 
-################# analysis functions ###############################
+# ***** analysis functions *****
+
 
 def df_participants_features(df_chat):
-    df_participants = _get_df_participants(df_chat)
-    #df_participants[COLNAMES_DF.FirstMessage] = _add_first_message_date(df_chat, df_participants)
-    #df_participants[COLNAMES_DF.LastMessage] = _add_last_message_date(df_chat, df_participants)
-    df_participants[COLNAMES_DF.WORDS_NO] = _add_total_words_no(df_chat, df_participants)
+    # Calculate the number of words in messages
+    df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
+    # number of ulrs
+    df_chat[COLNAMES_DF.URL_NO] = df_chat["message"].apply(lambda x: len(re.findall(URL_PATTERN, x))).sum().astype(int)
+    # number of locations
+    df_chat[COLNAMES_DF.LOCATION_NO] = df_chat["message"].apply(
+        lambda x: len(re.findall(LOCATION_PATTERN, x))).sum().astype(int)
+    # number of files
+    df_chat[COLNAMES_DF.FILE_NO] = df_chat["message"].apply(lambda x: len(re.findall(FILE_PATTERN, x))).sum().astype(
+        int)
+    # number of messages
+    df_chat[COLNAMES_DF.MESSAGE_NO] = 1
+
+    df_participants = df_chat.groupby(COLNAMES_DF.USERNAME).agg({
+        COLNAMES_DF.WORDS_NO: 'sum',
+        COLNAMES_DF.URL_NO: 'sum',
+        COLNAMES_DF.LOCATION_NO: 'sum',
+        COLNAMES_DF.FILE_NO: 'sum',
+        COLNAMES_DF.MESSAGE_NO: 'sum'
+    }).reset_index()
+
     response_matrix = _get_response_matrix(df_chat)
-    df_participants[COLNAMES_DF.REPLY_2USER] = _add_replies2user(response_matrix, df_participants)
-    response_matrix[COLNAMES_DF.MAX_REPLY_2] = response_matrix.idxmax(axis=1)
-    df_participants[COLNAMES_DF.USER_REPLY2] = _add_userreplies2(response_matrix, df_participants)
-    df_participants[COLNAMES_DF.URL_NO] = _add_pattern_no(df_chat, df_participants, URL_PATTERN)
-    df_participants[COLNAMES_DF.LOCATION_NO] = _add_pattern_no(df_chat, df_participants, LOCATION_PATTERN)
-    df_participants[COLNAMES_DF.FILE_NO] = _add_pattern_no(df_chat, df_participants, FILE_PATTERN)
-    response_matrix[COLNAMES_DF.OUT_DEGREE] = response_matrix.sum(axis=1)
-    df_participants[COLNAMES_DF.OUT_DEGREE] = _add_out_degree(response_matrix, df_participants)
-    df_participants[COLNAMES_DF.IN_DEGREE] = _add_in_degree(response_matrix, df_participants)
-    # df_participants[COLNAMES_DF.EMOJI_NO] = _add_emoji_counts(df_chat, df_participants)
-    # df_participants[COLNAMES_DF.EMOJI_Fav] = _add_emoji_fav(df_chat, df_participants)
-    # salt = _make_salt()
-    # df_participants[COLNAMES_DF.USERNAME] = _anonymize_participants(df_participants, COLNAMES_DF.USERNAME, salt)
-    # df_participants[COLNAMES_DF.REPLY_2USER] = _anonymize_participants(df_participants, COLNAMES_DF.REPLY_2USER, salt)
-    # df_participants[COLNAMES_DF.USER_REPLY2] = _anonymize_participants(df_participants, COLNAMES_DF.USER_REPLY2, salt)
+    out_degree = response_matrix.sum(axis=1)
+    in_degree = response_matrix.T.sum(axis=1)
+    user_reply2 = response_matrix.idxmax(axis=1)
+    reply2_user = response_matrix.T.idxmax(axis=1)
+
+    # TODO: Confirm this is okay (should be symettric)
+    response_matrix[COLNAMES_DF.OUT_DEGREE] = out_degree
+    response_matrix[COLNAMES_DF.IN_DEGREE] = in_degree
+    response_matrix[COLNAMES_DF.USER_REPLY2] = user_reply2
+    response_matrix[COLNAMES_DF.REPLY_2USER] = reply2_user
+    response_matrix.index.name = COLNAMES_DF.USERNAME
+    response_matrix = response_matrix.loc[:,
+                      [COLNAMES_DF.OUT_DEGREE, COLNAMES_DF.IN_DEGREE, COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]]
+    response_matrix = response_matrix.reset_index()
+
+    df_participants = pd.merge(df_participants, response_matrix, how="left", on=COLNAMES_DF.USERNAME, validate="1:1")
 
     return df_participants
 
 
 def _get_df_participants(df_chat):
-    df = df_chat[COLNAMES_DF.USERNAME].value_counts().rename(COLNAMES_DF.MESSAGE_NO)
+    df = df_chat[COLNAMES_DF.USERNAME].value_counts().sort_index().rename(COLNAMES_DF.MESSAGE_NO)
     df = pd.DataFrame(df)
     df = df.rename_axis(COLNAMES_DF.USERNAME).reset_index()
     return df
@@ -497,7 +522,7 @@ def _make_salt():
     return os.urandom(32)
 
 def _anonym_txt(txt, salt):
-    anonymized_txt =  hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
+    anonymized_txt = hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
     return anonymized_txt
 
 def _anonymize_participants(df_participants, col_name, salt):
