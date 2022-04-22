@@ -7,7 +7,10 @@ from data_extractor.whatsapp import _add_userreplies2
 from data_extractor.whatsapp import _add_pattern_no
 from data_extractor.whatsapp import _add_out_degree
 from data_extractor.whatsapp import _add_in_degree
+from data_extractor.whatsapp import df_from_txt_whatsapp
 
+import zipfile
+import re
 
 from pathlib import Path
 import pandas as pd
@@ -18,9 +21,9 @@ from pandas.testing import assert_series_equal
 DATA_PATH = Path(__file__).parent / "data"
 
 EXPECTED = [
-    {'username': 'user1', 'message_no': 3, 'total_words_no': 17, 'reply_2_user': 'user2', 'user_reply2': 'user2',
-     'url_no': 0, 'location_no': 1, 'file_no': 0, 'out_degree': 2, 'in_degree': 3},
-    {'username': 'user2', 'message_no': 3, 'total_words_no': 14, 'reply_2_user': 'user1', 'user_reply2': 'user3',
+    {'username': 'user1', 'message_no': 3, 'total_words_no': 20, 'reply_2_user': 'user2', 'user_reply2': 'user2',
+     'url_no': 1, 'location_no': 1, 'file_no': 0, 'out_degree': 2, 'in_degree': 3},
+    {'username': 'user2', 'message_no': 3, 'total_words_no': 16, 'reply_2_user': 'user1', 'user_reply2': 'user3',
      'url_no': 2, 'location_no': 0, 'file_no': 0, 'out_degree': 3, 'in_degree': 3},
     {'username': 'user3', 'message_no': 1, 'total_words_no': 1, 'reply_2_user': 'user2', 'user_reply2': 'user3',
      'url_no': 0,
@@ -33,6 +36,27 @@ EXPECTED = [
 df_expected = pd.DataFrame(EXPECTED)
 
 
+def input_df():
+    """
+    create common inputs df_chats and df_participants
+    """
+    hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
+    zfile = zipfile.ZipFile(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))
+    for name in zfile.namelist():
+        if re.search('chat.txt', name):
+            text = zfile.read(name).decode("utf-8")
+            df_chat = df_from_txt_whatsapp(text, hformats=hformats)
+            for i, v in df_chat['username'].items():
+                df_chat.loc[i, 'username'] = v.strip('\u202c')
+            df_participants = _get_df_participants(df_chat)
+
+    return df_chat, df_participants
+
+
+df_chat, df_participants = input_df()
+response_matrix = _get_response_matrix(df_chat)
+
+
 def test_process():
     result = process(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))
 
@@ -43,17 +67,20 @@ def test_process():
 
 
 def test_get_df_participants():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-
+    """
+    Tests the equivalence of total number of messages sent by each user
+    """
     result = _get_df_participants(df_chat)
+    result['message_no'] = result['message_no'].astype('int64')
 
     assert_series_equal(result['message_no'], df_expected['message_no'])
 
 
 def test_add_total_words_no():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-    df_participants = pd.read_csv(DATA_PATH.joinpath("df_participants.csv").open("rb"))
-
+    """
+    Tests the equivalence of total number of words for each user. Words are distinguished based on the space
+    between the words. so, for example emojis, and URLs are also counted as a word.
+    """
     result = _add_total_words_no(df_chat, df_participants)
     result.rename("total_words_no", inplace=True)
 
@@ -61,10 +88,9 @@ def test_add_total_words_no():
 
 
 def test_add_replies2user():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-    df_participants = pd.read_csv(DATA_PATH.joinpath("df_participants.csv").open("rb"))
-    response_matrix = _get_response_matrix(df_chat)
-
+    """
+    Test which participant is first replied to by the current participants
+    """
     result = _add_replies2user(response_matrix, df_participants)
     result.rename("reply_2_user", inplace=True)
 
@@ -72,10 +98,6 @@ def test_add_replies2user():
 
 
 def test_add_userreplies2():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-    df_participants = pd.read_csv(DATA_PATH.joinpath("df_participants.csv").open("rb"))
-    response_matrix = _get_response_matrix(df_chat)
-
     result = _add_userreplies2(response_matrix, df_participants)
     result.rename("user_reply2", inplace=True)
 
@@ -83,9 +105,9 @@ def test_add_userreplies2():
 
 
 def test_add_pattern_no():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-    df_participants = pd.read_csv(DATA_PATH.joinpath("df_participants.csv").open("rb"))
-
+    """
+    Location link is counted both for link and location
+    """
     url_pattern = r'(https?://\S+)'
     location_pattern = r'(Location: https?://\S+)'
     file_pattern = r'(<attached: \S+>)'
@@ -104,10 +126,9 @@ def test_add_pattern_no():
 
 
 def test_add_out_degree():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-    df_participants = pd.read_csv(DATA_PATH.joinpath("df_participants.csv").open("rb"))
-    response_matrix = _get_response_matrix(df_chat)
-
+    """
+    Test the number of participants the current participant replies to
+    """
     result = _add_out_degree(response_matrix, df_participants)
     result.rename("out_degree", inplace=True)
 
@@ -115,10 +136,9 @@ def test_add_out_degree():
 
 
 def test_add_in_degree():
-    df_chat = pd.read_csv(DATA_PATH.joinpath("df_chat.csv").open("rb"))
-    df_participants = pd.read_csv(DATA_PATH.joinpath("df_participants.csv").open("rb"))
-    response_matrix = _get_response_matrix(df_chat)
-
+    """
+    Test the number of participants respond to the current participant
+    """
     result = _add_in_degree(response_matrix, df_participants)
     result.rename("in_degree", inplace=True)
 
@@ -127,7 +147,7 @@ def test_add_in_degree():
 
 if __name__ == '__main__':
     test_process()
-#     test_get_df_participants()
+    # test_get_df_participants()
     # test_add_total_words_no()
     # test_add_replies2user()
     # # test_add_userreplies2() # To be fixed...
@@ -135,3 +155,4 @@ if __name__ == '__main__':
     # # test_add_out_degree() # To be fixed...
     # test_add_in_degree()
 
+# TODO : salt, process, inputs, poetry
