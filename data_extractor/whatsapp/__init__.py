@@ -15,7 +15,11 @@ import hashlib
 
 URL_PATTERN = r'(https?://\S+)'
 LOCATION_PATTERN = r'(Location: https?://\S+)'
-FILE_PATTERN = r'(<attached: \S+>)'
+ATTACH_FILE_PATTERN = r'(<attached: \S+>)'
+FILE_RE = re.compile(r".*chat.*.txt$")
+HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
+
+hformats = ['%m/%d/%y, %H:%M - %name:','[%d/%m/%y, %H:%M:%S] %name:']
 
 
 class RegexError(Exception):
@@ -98,125 +102,28 @@ regex_simplifier = {
     '%name': fr'(?P<{COLNAMES_DF.USERNAME}>[^:]*)'
 }
 
-
-def df_from_txt_whatsapp(text, hformats=None, encoding='utf-8'):
-    """Load chat as a DataFrame.
-    Args:
-        filepath (str): Path to the file. Accepted sources are:
-                * Local file, e.g. 'path/to/file.txt'.
-        hformat (str, optional): :ref:`Format of the header <The header format>`, e.g.
-                                    ``'[%y-%m-%d %H:%M:%S] - %name:'``. Use following keywords:
-                                    - ``'%y'``: for year (``'%Y'`` is equivalent).
-                                    - ``'%m'``: for month.
-                                    - ``'%d'``: for day.
-                                    - ``'%H'``: for 24h-hour.
-                                    - ``'%I'``: for 12h-hour.
-                                    - ``'%M'``: for minutes.
-                                    - ``'%S'``: for seconds.
-                                    - ``'%P'``: for "PM"/"AM" or "p.m."/"a.m." characters.
-                                    - ``'%name'``: for the username.
-                                    Example 1: For the header '12/08/2016, 16:20 - username:' we have the
-                                    ``'hformat='%d/%m/%y, %H:%M - %name:'``.
-                                    Example 2: For the header '2016-08-12, 4:20 PM - username:' we have
-                                    ``hformat='%y-%m-%d, %I:%M %P - %name:'``.
-        encoding (str, optional): Encoding to use for UTF when reading/writing (ex. 'utf-8').
-                                  `List of Python standard encodings <https://docs.python.org/3/library/codecs.
-                                  html#standard-encodings>`_.
-    Returns:
-        DataFrame: a DataFrame with three columns, i.e. 'date', 'username', and 'message'
-    """
-
-    for hformat in hformats:
-        # Build dataframe
-        df = _df_from_str(text, hformat)
-        if df is not None:
-             return df
-    print("hformats did not match the provided text. No match was found")
-    return None
-
-
-def generate_regex(hformat):
+def generate_regex(log_error, hformat):
     r"""Generate regular expression from hformat.
+
     Args:
+        log_error (list): Includes list of error messages.
         hformat (str): Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``.
+
     Returns:
         str: Regular expression corresponding to the specified syntax.
+
     """
     items = re.findall(r'\%\w*', hformat)
+
     for i in items:
-        hformat = hformat.replace(i, regex_simplifier[i])
+        try:
+            hformat = hformat.replace(i, regex_simplifier[i])
+        except KeyError:
+            log_error(f"Could find regular expression for : {i}")
 
     hformat = hformat + ' '
     hformat_x = hformat.split('(?P<username>[^:]*)')[0]
     return hformat, hformat_x
-
-
-def _str_from_txt(filepath, encoding='utf-8'):
-    """Read text content as string.
-    Args:
-        filepath (str): Path to a local file.
-        encoding (str, optional): Encoding to use for UTF when reading/writing (ex. ‘utf-8’).
-                                  `List of Python standard encodings <https://docs.python.org/3/library/codecs.
-                                  html#standard-encodings>`_.
-    Raises:
-        FileNotFoundError: [description]
-    Returns:
-        str: File content as a string.
-    """
-    # Read local file
-    if os.path.isfile(filepath) and os.access(filepath, os.R_OK):
-        with open(filepath, 'r', encoding=encoding) as f:
-            text = f.read()
-    else:
-        raise FileNotFoundError(f"File {filepath} was not found locally or remotely. Please check it exists.")
-    return text
-
-
-def _df_from_str(text,  hformat=None):
-    # Get hformat
-    if hformat:
-        # Bracket is reserved character in RegEx, add backslash before them.
-        hformat = hformat.replace('[', r'\[').replace(']', r'\]')
-    else:
-        raise ValueError(" hformat can't be None.")
-
-    # Generate regex for given hformat
-    r, r_x = generate_regex(hformat=hformat)
-
-    # Parse chat to DataFrame
-    try:
-        df = _parse_chat(text, r)
-        df = _remove_alerts_from_df(r_x, df)
-        df = _add_schema(df)
-
-        return df
-    except:
-        pass
-    return None
-
-
-def _parse_chat(text, regex):
-    """Parse chat using given regex.
-    Args:
-        text (str) Whole log chat text.
-        regex (str): Regular expression
-    Returns:
-        pandas.DataFrame: DataFrame with messages sent by users, index is the date the messages was sent.
-    Raises:
-        RegexError: When provided regex could not match the text.
-    """
-    result = []
-    headers = list(re.finditer(regex, text))
-    for i in range(len(headers)):
-        try:
-            line_dict = _parse_line(text, headers, i)
-        except KeyError:
-            raise RegexError("Could not match the provided regex with provided text. No match was found.")
-        result.append(line_dict)
-    df_chat = pd.DataFrame.from_records(result)
-    df_chat = df_chat[[COLNAMES_DF.DATE,COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
-    return df_chat
-
 
 def _add_schema(df):
     """Add default chat schema to df.
@@ -316,6 +223,130 @@ def _get_message(text, headers, i):
     msg = text[msg_start:msg_end].strip()
     return msg
 
+
+def _parse_text(text, regex):
+    """Parse chat using given regex.
+
+    Args:
+        text (str) Whole log chat text.
+        regex (str): Regular expression
+
+    Returns:
+        pandas.DataFrame: DataFrame with messages sent by users, index is the date the messages was sent.
+
+    Raises:
+        RegexError: When provided regex could not match the text.
+
+    """
+    result = []
+    headers = list(re.finditer(regex, text))
+    try:
+        for i in range(len(headers)):
+            line_dict = _parse_line(text, headers, i)
+            result.append(line_dict)
+    except KeyError:
+        print("Could not match the provided regex with provided text. No match was found.")
+        return None
+
+    df_chat = pd.DataFrame.from_records(result)
+    df_chat = df_chat[[COLNAMES_DF.DATE,COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
+
+    # clean username
+    #Todo : more investigation
+    df_chat[COLNAMES_DF.USERNAME] = df_chat[COLNAMES_DF.USERNAME].apply(lambda u: u.strip('\u202c'))
+
+    return df_chat
+
+
+def _make_chat_df(log_error,text,hformat):
+    r"""Load chat as a DataFrame.
+
+        Args:
+            log_error (list): Includes list of error messages.
+
+            hformat (str): Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``.
+
+        Returns:
+            str: Regular expression corresponding to the specified syntax.
+
+    """
+    # Bracket is reserved character in RegEx, add backslash before them.
+    hformat = hformat.replace('[', r'\[').replace(']', r'\]')
+
+    # Generate regex for given hformat
+    r, r_x = generate_regex(log_error,hformat=hformat)
+
+    # Parse chat to DataFrame
+    try:
+        df = _parse_text(text, r)
+        df = _remove_alerts_from_df(r_x, df)
+        df = _add_schema(df)
+
+        return df
+    except:
+        print(f"hformat : {hformat} is not match with the given text")
+        return None
+
+
+def parse_chat(log_error, text):
+    """Parse chat and test it with given hformats
+
+    Args:
+        log_error (list): Includes list of error messages.
+        hformat (str, optional): :ref:`Format of the header <The header format>`, e.g.
+                                    ``'[%y-%m-%d %H:%M:%S] - %name:'``. Use following keywords:
+
+                                    - ``'%y'``: for year (``'%Y'`` is equivalent).
+                                    - ``'%m'``: for month.
+                                    - ``'%d'``: for day.
+                                    - ``'%H'``: for 24h-hour.
+                                    - ``'%I'``: for 12h-hour.
+                                    - ``'%M'``: for minutes.
+                                    - ``'%S'``: for seconds.
+                                    - ``'%P'``: for "PM"/"AM" or "p.m."/"a.m." characters.
+                                    - ``'%name'``: for the username.
+
+                                    Example 1: For the header '12/08/2016, 16:20 - username:' we have the
+                                    ``'hformat='%d/%m/%y, %H:%M - %name:'``.
+
+                                    Example 2: For the header '2016-08-12, 4:20 PM - username:' we have
+                                    ``hformat='%y-%m-%d, %I:%M %P - %name:'``.
+        encoding (str, optional): Encoding to use for UTF when reading/writing (ex. 'utf-8').
+                                  `List of Python standard encodings <https://docs.python.org/3/library/codecs.
+                                  html#standard-encodings>`_.
+
+    Returns:
+        DataFrame: a DataFrame with three columns, i.e. 'date', 'username', and 'message'
+
+    """
+    for hformat in hformats:
+        # Build dataframe
+        df = _make_chat_df(log_error, text, hformat)
+        if df is not None:
+             return df
+    log_error("hformats did not match the provided text. No match was found")
+    return None
+
+def decode_chat(log_error, f, filename):
+    try:
+        data = f.decode("utf-8")
+    except:
+        log_error(f"Could not decode to utf-8: {filename}")
+    else:
+        return parse_chat(log_error, data)
+
+
+def parse_zipfile(log_error, zfile):
+    results = []
+    for name in zfile.namelist():
+        if HIDDEN_FILE_RE.match(name):
+            continue
+        if not FILE_RE.match(name):
+            continue
+        chats = decode_chat(log_error,zfile.read(name),name)
+        results.append(chats)
+    return results
+
 # *** analysis functions ***
 
 
@@ -323,18 +354,28 @@ def input_df(data_path):
     """
     create common inputs df_chats and df_participants
     """
-    hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
+    # zfile = zipfile.ZipFile(data_path.joinpath("whatsapp_chat.zip").open("rb"))
+    # for name in zfile.namelist():
+    #     if re.search('chat.txt', name):
+    #         text = zfile.read(name).decode("utf-8")
+    #         df_chat = df_from_txt_whatsapp(text, hformats=hformats)
+    #         for i, v in df_chat['username'].items():
+    #             df_chat.loc[i, 'username'] = v.strip('\u202c')
+    #         df_participants = df_participants_features(df_chat)
+
+    errors = []
+    log_error = errors.append
     zfile = zipfile.ZipFile(data_path.joinpath("whatsapp_chat.zip").open("rb"))
-    for name in zfile.namelist():
-        if re.search('chat.txt', name):
-            text = zfile.read(name).decode("utf-8")
-            df_chat = df_from_txt_whatsapp(text, hformats=hformats)
-            for i, v in df_chat['username'].items():
-                df_chat.loc[i, 'username'] = v.strip('\u202c')
-            df_participants = df_participants_features(df_chat)
+    chats = parse_zipfile(log_error, zfile)
+    participants = extract_participants_features(chats)
+    return chats[0], participants[0]
 
-    return df_chat, df_participants
-
+def extract_participants_features(chats):
+    results =[]
+    for chat in chats:
+        df = df_participants_features(chat)
+        results.append(df)
+    return results
 
 def df_participants_features(df_chat):
     df_participants = _get_df_participants(df_chat)
@@ -347,8 +388,8 @@ def df_participants_features(df_chat):
     df_participants[COLNAMES_DF.USER_REPLY2] = _add_userreplies2(response_matrix, df_participants)
     df_participants[COLNAMES_DF.URL_NO] = _add_pattern_no(df_chat, df_participants, URL_PATTERN)
     df_participants[COLNAMES_DF.LOCATION_NO] = _add_pattern_no(df_chat, df_participants, LOCATION_PATTERN)
-    df_participants[COLNAMES_DF.FILE_NO] = _add_pattern_no(df_chat, df_participants, FILE_PATTERN)
-    response_matrix[COLNAMES_DF.OUT_DEGREE] = response_matrix.sum(axis=1)
+    df_participants[COLNAMES_DF.FILE_NO] = _add_pattern_no(df_chat, df_participants, ATTACH_FILE_PATTERN)
+    response_matrix[COLNAMES_DF.OUT_DEGREE] = response_matrix.sum(axis=1, numeric_only=True)
     df_participants[COLNAMES_DF.OUT_DEGREE] = _add_out_degree(response_matrix, df_participants)
     df_participants[COLNAMES_DF.IN_DEGREE] = _add_in_degree(response_matrix, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_NO] = _add_emoji_counts(df_chat, df_participants)
@@ -494,22 +535,40 @@ def _anonym_txt(txt, salt):
 def _anonymize_participants(df_participants, col_name, salt):
     return df_participants[col_name].apply(lambda u: _anonym_txt(u,salt))
 
+######################## end of analysis functions ##################################################################
+
+def format_results(df_list):
+    results = []
+    for df in df_list:
+        results.append(
+            {
+            "id": "overview",
+            "title": "The following files where read:",
+            "data_frame": df
+            }
+        )
+    return results
+
+def format_errors(errors):
+    data_frame = pd.DataFrame()
+    data_frame["Messages"] = pd.Series(errors, name="Messages")
+    return {"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}
 
 def process(file_data):
-    hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
+    errors = []
+    log_error = errors.append
     zfile = zipfile.ZipFile(file_data)
-    for name in zfile.namelist():
-        if re.search('chat.txt', name):
-            text = zfile.read(name).decode("utf-8")
-            # print(text)
-            df_chat = df_from_txt_whatsapp(text, hformats=hformats)
-            for i, v in df_chat['username'].items():
-                df_chat.loc[i, 'username'] = v.strip('\u202c')
-            # #print(df_chat)
-            df_participants = df_participants_features(df_chat)
-            # #print(df_participants)
-    return [{
-        "id": "overview",
-        "title": "The following files where read:",
-        "data_frame": df_participants
-    }]
+    chats = parse_zipfile(log_error, zfile)
+    participants = extract_participants_features(chats)
+    formatted_results = format_results(participants)
+
+    if errors:
+        return [format_errors(errors)]
+    return formatted_results
+
+
+# if __name__ == '__main__':
+#     file_path = "../tests/data/Archive.zip"
+#     ch = process(file_path)
+#
+#     print(ch)
