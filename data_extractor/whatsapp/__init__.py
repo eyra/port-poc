@@ -16,11 +16,9 @@ URL_PATTERN = r'(https?://\S+)'
 LOCATION_PATTERN = r'(Location: https?://\S+)'
 FILE_PATTERN = r'(<attached: \S+>)'
 
-
 class RegexError(Exception):
     """Raised when regex match is not possible."""
     pass
-
 
 class ColnamesDf:
     """Access class constants using variable ``utils.COLNAMES_DF``.
@@ -79,10 +77,9 @@ class ColnamesDf:
     EMOJI_Fav = 'emoji_fav'
     """Favorite emojies column"""
 
-
 COLNAMES_DF = ColnamesDf()
 
-# ***** parsing functions *****
+######### parsing functions #####################
 regex_simplifier = {
     '%Y': r'(?P<year>\d{2,4})',
     '%y': r'(?P<year>\d{2,4})',
@@ -97,17 +94,13 @@ regex_simplifier = {
     '%name': fr'(?P<{COLNAMES_DF.USERNAME}>[^:]*)'
 }
 
-
 def df_from_txt_whatsapp(text, hformats=None, encoding='utf-8'):
     """Load chat as a DataFrame.
-
     Args:
         filepath (str): Path to the file. Accepted sources are:
-
                 * Local file, e.g. 'path/to/file.txt'.
         hformat (str, optional): :ref:`Format of the header <The header format>`, e.g.
                                     ``'[%y-%m-%d %H:%M:%S] - %name:'``. Use following keywords:
-
                                     - ``'%y'``: for year (``'%Y'`` is equivalent).
                                     - ``'%m'``: for month.
                                     - ``'%d'``: for day.
@@ -117,19 +110,15 @@ def df_from_txt_whatsapp(text, hformats=None, encoding='utf-8'):
                                     - ``'%S'``: for seconds.
                                     - ``'%P'``: for "PM"/"AM" or "p.m."/"a.m." characters.
                                     - ``'%name'``: for the username.
-
                                     Example 1: For the header '12/08/2016, 16:20 - username:' we have the
                                     ``'hformat='%d/%m/%y, %H:%M - %name:'``.
-
                                     Example 2: For the header '2016-08-12, 4:20 PM - username:' we have
                                     ``hformat='%y-%m-%d, %I:%M %P - %name:'``.
         encoding (str, optional): Encoding to use for UTF when reading/writing (ex. 'utf-8').
                                   `List of Python standard encodings <https://docs.python.org/3/library/codecs.
                                   html#standard-encodings>`_.
-
     Returns:
         DataFrame: a DataFrame with three columns, i.e. 'date', 'username', and 'message'
-
     """
 
     for hformat in hformats:
@@ -140,16 +129,12 @@ def df_from_txt_whatsapp(text, hformats=None, encoding='utf-8'):
     print("hformats did not match the provided text. No match was found")
     return None
 
-
 def generate_regex(hformat):
     r"""Generate regular expression from hformat.
-
     Args:
         hformat (str): Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``.
-
     Returns:
         str: Regular expression corresponding to the specified syntax.
-
     """
     items = re.findall(r'\%\w*', hformat)
     for i in items:
@@ -162,7 +147,6 @@ def generate_regex(hformat):
 
 def _str_from_txt(filepath, encoding='utf-8'):
     """Read text content as string.
-
     Args:
         filepath (str): Path to a local file.
         encoding (str, optional): Encoding to use for UTF when reading/writing (ex. ‘utf-8’).
@@ -170,7 +154,6 @@ def _str_from_txt(filepath, encoding='utf-8'):
                                   html#standard-encodings>`_.
     Raises:
         FileNotFoundError: [description]
-
     Returns:
         str: File content as a string.
     """
@@ -205,20 +188,15 @@ def _df_from_str(text,  hformat=None):
         pass
     return None
 
-
 def _parse_chat(text, regex):
     """Parse chat using given regex.
-
     Args:
         text (str) Whole log chat text.
         regex (str): Regular expression
-
     Returns:
         pandas.DataFrame: DataFrame with messages sent by users, index is the date the messages was sent.
-
     Raises:
         RegexError: When provided regex could not match the text.
-
     """
     result = []
     headers = list(re.finditer(regex, text))
@@ -235,13 +213,10 @@ def _parse_chat(text, regex):
 
 def _add_schema(df):
     """Add default chat schema to df.
-
     Args:
         df (pandas.DataFrame): Chat dataframe.
-
     Returns:
         pandas.DataFrame: Chat dataframe with correct dtypes.
-
     """
     df = df.astype({
         COLNAMES_DF.DATE: pd.StringDtype(), #'datetime64[ns]',
@@ -253,15 +228,12 @@ def _add_schema(df):
 
 def _parse_line(text, headers, i):
     """Get date, username and message from the i:th intervention.
-
     Args:
         text (str): Whole log chat text.
         headers (list): All headers.
         i (int): Index denoting the message number.
-
     Returns:
         dict: i:th date, username and message.
-
     """
     result_ = headers[i].groupdict()
     if 'ampm' in result_:
@@ -298,14 +270,11 @@ def _parse_line(text, headers, i):
 
 def _remove_alerts_from_df(r_x, df):
     """Try to get rid of alert/notification messages.
-
     Args:
         r_x (str): Regular expression to detect whatsapp warnings.
         df (pandas.DataFrame): DataFrame with all interventions.
-
     Returns:
         pandas.DataFrame: Fixed version of input dataframe.
-
     """
     df_new = df.copy()
     df_new.loc[:, COLNAMES_DF.MESSAGE] = df_new[COLNAMES_DF.MESSAGE].apply(lambda x: _remove_alerts_from_line(r_x, x))
@@ -314,14 +283,11 @@ def _remove_alerts_from_df(r_x, df):
 
 def _remove_alerts_from_line(r_x, line_df):
     """Remove line content that is not desirable (automatic alerts etc.).
-
     Args:
         r_x (str): Regula expression to detect WhatsApp warnings.
         line_df (str): Message sent as string.
-
     Returns:
         str: Cleaned message string.
-
     """
     if re.search(r_x, line_df):
         return line_df[:re.search(r_x, line_df).start()]
@@ -331,26 +297,22 @@ def _remove_alerts_from_line(r_x, line_df):
 
 def _get_message(text, headers, i):
     """Get i:th message from text.
-
     Args:
         text (str): Whole log chat text.
         headers (list): All headers.
         i (int): Index denoting the message number.
-
     Returns:
         str: i:th message.
-
     """
     msg_start = headers[i].end()
     msg_end = headers[i + 1].start() if i < len(headers) - 1 else headers[i].endpos
     msg = text[msg_start:msg_end].strip()
     return msg
 
-# ***** analysis functions *****
-
+################# analysis functions ###############################
 
 def df_participants_features(df_chat):
-    # Calculate the number of words in messages
+    ## Calculate the number of words in messages
     df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
     # number of ulrs
     df_chat[COLNAMES_DF.URL_NO] = df_chat["message"].apply(lambda x: len(re.findall(URL_PATTERN, x))).sum().astype(int)
@@ -522,7 +484,7 @@ def _make_salt():
     return os.urandom(32)
 
 def _anonym_txt(txt, salt):
-    anonymized_txt = hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
+    anonymized_txt =  hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
     return anonymized_txt
 
 def _anonymize_participants(df_participants, col_name, salt):
@@ -536,6 +498,8 @@ def process(file_data):
             text = zfile.read(name).decode("utf-8")
             # print(text)
             df_chat = df_from_txt_whatsapp(text, hformats=hformats)
+            for i, v in df_chat['username'].items():
+                df_chat.loc[i, 'username'] = v.strip('\u202c')
             # #print(df_chat)
             df_participants = df_participants_features(df_chat)
             # #print(df_participants)
