@@ -9,6 +9,7 @@ from data_extractor.whatsapp import _add_out_degree
 from data_extractor.whatsapp import _add_in_degree
 from data_extractor.whatsapp import df_from_txt_whatsapp
 from data_extractor.whatsapp import df_participants_features
+from data_extractor.whatsapp import _anonymize_participants
 from data_extractor.whatsapp import input_df
 
 import zipfile
@@ -16,6 +17,7 @@ import re
 
 from pathlib import Path
 import pandas as pd
+import hashlib
 from pandas.testing import assert_frame_equal
 from pandas.testing import assert_series_equal
 
@@ -36,6 +38,10 @@ EXPECTED = [
 ]
 
 df_expected = pd.DataFrame(EXPECTED)
+df_expected['username'] = _anonymize_participants(df_expected, 'username', str.encode('WhatsAppProject@2022'))
+df_expected['reply_2_user'] = _anonymize_participants(df_expected, 'reply_2_user', str.encode('WhatsAppProject@2022'))
+df_expected['user_reply2'] = _anonymize_participants(df_expected, 'user_reply2', str.encode('WhatsAppProject@2022'))
+
 df_chat, df_participants = input_df(DATA_PATH)
 response_matrix = _get_response_matrix(df_chat)
 
@@ -130,12 +136,12 @@ def test_add_in_degree():
 
 if __name__ == '__main__':
     test_process()
-    test_get_df_participants()
-    test_add_total_words_no()
-    test_add_replies2user()
-    # test_add_userreplies2() # To be fixed...
-    test_add_pattern_no()
-    # test_add_out_degree() # To be fixed...
-    test_add_in_degree()
+    # test_get_df_participants()
+    # test_add_total_words_no()
+    # test_add_replies2user()
+    # # test_add_userreplies2() # To be fixed...
+    # test_add_pattern_no()
+    # # test_add_out_degree() # To be fixed...
+    # test_add_in_degree()
 
 # TODO : salt, process, inputs, poetry, remove datafiles
