@@ -483,12 +483,6 @@ def _get_in_degree(response_matrix, user):
 #     return df_participants[COLNAMES_DF.USERNAME].apply(lambda u: _get_fav_emoji(df_chat, u))
 
 def _make_salt():
-    """
-    Generate a unique string to add to the anonymization function
-    Returns:
-        String
-    """
-    # return os.urandom(32)
     return str.encode('WhatsAppProject@2022')
 
 
