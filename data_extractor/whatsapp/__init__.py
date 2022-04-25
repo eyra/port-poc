@@ -309,10 +309,28 @@ def _get_message(text, headers, i):
     msg = text[msg_start:msg_end].strip()
     return msg
 
-################# analysis functions ###############################
+# *** analysis functions ***
+
+
+def input_df(data_path):
+    """
+    create common inputs df_chats and df_participants
+    """
+    hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
+    zfile = zipfile.ZipFile(data_path.joinpath("whatsapp_chat.zip").open("rb"))
+    for name in zfile.namelist():
+        if re.search('chat.txt', name):
+            text = zfile.read(name).decode("utf-8")
+            df_chat = df_from_txt_whatsapp(text, hformats=hformats)
+            for i, v in df_chat['username'].items():
+                df_chat.loc[i, 'username'] = v.strip('\u202c')
+            df_participants = df_participants_features(df_chat)
+
+    return df_chat, df_participants
+
 
 def df_participants_features(df_chat):
-    ## Calculate the number of words in messages
+    # Calculate the number of words in messages
     df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
     # number of ulrs
     df_chat[COLNAMES_DF.URL_NO] = df_chat["message"].apply(lambda x: len(re.findall(URL_PATTERN, x))).sum().astype(int)
@@ -483,12 +501,15 @@ def _make_salt():
     """
     return os.urandom(32)
 
+
 def _anonym_txt(txt, salt):
     anonymized_txt =  hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
     return anonymized_txt
 
+
 def _anonymize_participants(df_participants, col_name, salt):
     return df_participants[col_name].apply(lambda u: _anonym_txt(u,salt))
+
 
 def process(file_data):
     hformats = ['[%d/%m/%y, %H:%M:%S] %name:', '%m/%d/%y, %H:%M - %name:']
