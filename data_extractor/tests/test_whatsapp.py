@@ -1,24 +1,17 @@
-from data_extractor.whatsapp import process
-from data_extractor.whatsapp import _get_df_participants
-from data_extractor.whatsapp import _add_total_words_no
-from data_extractor.whatsapp import _get_response_matrix
-from data_extractor.whatsapp import _add_replies2user
-from data_extractor.whatsapp import _add_userreplies2
-from data_extractor.whatsapp import _add_pattern_no
-from data_extractor.whatsapp import _add_out_degree
-from data_extractor.whatsapp import _add_in_degree
-from data_extractor.whatsapp import df_from_txt_whatsapp
-from data_extractor.whatsapp import df_participants_features
-from data_extractor.whatsapp import _anonymize_participants
-from data_extractor.whatsapp import input_df
-
-import zipfile
-import re
+from whatsapp.__init__ import process
+from whatsapp import _get_df_participants
+from whatsapp import _add_total_words_no
+from whatsapp import _get_response_matrix
+from whatsapp import _add_replies2user
+from whatsapp import _add_userreplies2
+from whatsapp import _add_pattern_no
+from whatsapp import _add_out_degree
+from whatsapp import _add_in_degree
+from whatsapp import _anonymize_participants
+from whatsapp import input_df
 
 from pathlib import Path
 import pandas as pd
-import hashlib
-from pandas.testing import assert_frame_equal
 from pandas.testing import assert_series_equal
 
 
@@ -132,16 +125,3 @@ def test_add_in_degree():
     result.rename("in_degree", inplace=True)
 
     assert_series_equal(result, df_expected['in_degree'])
-
-
-if __name__ == '__main__':
-    test_process()
-    # test_get_df_participants()
-    # test_add_total_words_no()
-    # test_add_replies2user()
-    # # test_add_userreplies2() # To be fixed...
-    # test_add_pattern_no()
-    # # test_add_out_degree() # To be fixed...
-    # test_add_in_degree()
-
-# TODO : salt, process, inputs, poetry, remove datafiles
