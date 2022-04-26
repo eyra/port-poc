@@ -365,15 +365,18 @@ def input_df(data_path):
 
     errors = []
     log_error = errors.append
-    zfile = zipfile.ZipFile(data_path.joinpath("whatsapp_chat.zip").open("rb"))
+    fp = os.path.join(data_path,"whatsapp_chat.zip")
+    zfile = zipfile.ZipFile(fp)
     chats = parse_zipfile(log_error, zfile)
-    participants = extract_participants_features(chats)
+    participants = extract_participants_features(chats, anonymize = False)
     return chats[0], participants[0]
 
-def extract_participants_features(chats):
+def extract_participants_features(chats, anonymize = True):
     results =[]
     for chat in chats:
         df = df_participants_features(chat)
+        if anonymize:
+            df = anonym_participants(df)
         results.append(df)
     return results
 
@@ -394,13 +397,20 @@ def df_participants_features(df_chat):
     df_participants[COLNAMES_DF.IN_DEGREE] = _add_in_degree(response_matrix, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_NO] = _add_emoji_counts(df_chat, df_participants)
     # df_participants[COLNAMES_DF.EMOJI_Fav] = _add_emoji_fav(df_chat, df_participants)
+
+    # salt = _make_salt()
+    # df_participants[COLNAMES_DF.USERNAME] = _anonymize_participants(df_participants, COLNAMES_DF.USERNAME, salt)
+    # df_participants[COLNAMES_DF.REPLY_2USER] = _anonymize_participants(df_participants, COLNAMES_DF.REPLY_2USER, salt)
+    # df_participants[COLNAMES_DF.USER_REPLY2] = _anonymize_participants(df_participants, COLNAMES_DF.USER_REPLY2, salt)
+
+    return df_participants
+
+def anonym_participants(df_participants):
     salt = _make_salt()
     df_participants[COLNAMES_DF.USERNAME] = _anonymize_participants(df_participants, COLNAMES_DF.USERNAME, salt)
     df_participants[COLNAMES_DF.REPLY_2USER] = _anonymize_participants(df_participants, COLNAMES_DF.REPLY_2USER, salt)
     df_participants[COLNAMES_DF.USER_REPLY2] = _anonymize_participants(df_participants, COLNAMES_DF.USER_REPLY2, salt)
-
     return df_participants
-
 
 def _get_df_participants(df_chat):
     df = df_chat[COLNAMES_DF.USERNAME].value_counts().sort_index().rename(COLNAMES_DF.MESSAGE_NO)
@@ -566,9 +576,3 @@ def process(file_data):
         return [format_errors(errors)]
     return formatted_results
 
-
-# if __name__ == '__main__':
-#     file_path = "../tests/data/Archive.zip"
-#     ch = process(file_path)
-#
-#     print(ch)

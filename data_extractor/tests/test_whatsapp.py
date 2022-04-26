@@ -1,4 +1,4 @@
-from whatsapp.__init__ import process
+from whatsapp import process
 from whatsapp import _get_df_participants
 from whatsapp import _add_total_words_no
 from whatsapp import _get_response_matrix
