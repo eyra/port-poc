@@ -338,6 +338,8 @@ def parse_zipfile(log_error, zfile):
             continue
         chats = decode_chat(log_error,zfile.read(name),name)
         results.append(chats)
+    if len(results)==0:
+        log_error("No valid chat file is available")
     return results
 
 # *** test related function ***
@@ -509,7 +511,13 @@ def format_errors(errors):
 def process(file_data):
     errors = []
     log_error = errors.append
-    zfile = zipfile.ZipFile(file_data)
+    zfile = None
+    try:
+        zfile = zipfile.ZipFile(file_data)
+    except:
+        log_error("No zip file is provided")
+        return [format_errors(errors)]
+
     chats = parse_zipfile(log_error, zfile)
     if errors:
         return [format_errors(errors)]
