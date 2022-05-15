@@ -17,7 +17,8 @@ ATTACH_FILE_PATTERN = r'(<attached: \S+>)'
 FILE_RE = re.compile(r".*chat.*.txt$")
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
-hformats = ['%m/%d/%y, %H:%M - %name:','[%d/%m/%y, %H:%M:%S] %name:']
+hformats = ['%m/%d/%y, %H:%M - %name:','[%d/%m/%y, %H:%M:%S] %name:','%d-%m-%y %H:%M - %name:']
+
 
 
 class ColnamesDf:
@@ -510,10 +511,11 @@ def process(file_data):
     log_error = errors.append
     zfile = zipfile.ZipFile(file_data)
     chats = parse_zipfile(log_error, zfile)
+    if errors:
+        return [format_errors(errors)]
     participants = extract_participants_features(chats)
     formatted_results = format_results(participants)
 
-    if errors:
-        return [format_errors(errors)]
+
     return formatted_results
 
