@@ -1,0 +1,5 @@
+username,message_no,total_words_no,reply_2_user,user_reply2,url_no,location_no,file_no,out_degree,in_degree
+user1,2,4,user2,user2,1,1,0,1,2
+user2,2,3,user3,user3,1,0,0,2,2
+user3,1,1,user2,user2,0,0,0,1,1
+user4‬,1,20,user3,user1,0,0,0,1,0
