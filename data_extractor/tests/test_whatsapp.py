@@ -42,20 +42,9 @@ def test_process():
     result = process(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))
 
     assert len(result) == 1
-    # assert result[0]["id"] == 'overview'
-    # assert result[0]["title"] == 'The following files where read:'
     df_result = result[0]["data_frame"]
-    # df_result = df_result.loc[:, df_result.columns != 'url_no']
-    # df_result = df_result.loc[:, df_result.columns != 'location_no']
-    # df_result = df_result.loc[:, df_result.columns != 'user_reply2']
-
     assert_frame_equal(df_result, df_expected)
-    # assert_frame_equal(result[0]["data_frame"], df_expected)
 
 
 if __name__ == '__main__':
     test_process()
-    # print(type(df_expected['message_no']))
-    # result = process(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))[0]["data_frame"]
-    # print(type(result['message_no']))
-
