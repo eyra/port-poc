@@ -39,13 +39,13 @@ response_matrix = get_response_matrix(df_chat)
 
 
 def test_process():
-    """ Test process function
+    """ Test process function.
 
-    compares the expected dataframe with the output of process function to check if all the columns are match.
+    compares the expected dataframe with the output of the process function to check if all the columns are match.
 
-    Returns
+    Raises
     -------
-    error if any incompatibility is found, None otherwise
+    AssertionError: When provided expected dataframe could not match the participants dataframe
     """
     result = process(DATA_PATH.joinpath("whatsapp_chat.zip").open("rb"))
     assert len(result) == 1
