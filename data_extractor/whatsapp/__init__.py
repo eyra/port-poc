@@ -131,12 +131,12 @@ def add_schema(df):
     Parameters
     ----------
     df : pandas.DataFrame
-        Chat dataframe.
+        Chat DataFrame.
 
     Returns
     -------
     pandas.DataFrame
-        Chat dataframe with correct dtypes
+        Chat DataFrame with correct dtypes
     """
     df = df.astype({
         COLNAMES_DF.DATE: pd.StringDtype(),
@@ -209,7 +209,7 @@ def remove_alerts_from_df(r_x, df):
     Returns
     -------
     pandas.DataFrame
-        Fixed version of input dataframe
+        Fixed version of input DataFrame
     """
     df_new = df.copy()
     df_new.loc[:, COLNAMES_DF.MESSAGE] = df_new[COLNAMES_DF.MESSAGE].apply(lambda x: remove_alerts_from_line(r_x, x))
@@ -272,8 +272,8 @@ def parse_text(text, regex):
 
     Returns
     -------
-    pandas.dataframe
-        pandas.dataframe with messages sent by users, index is the date the messages was sent.
+    pandas.DataFrame
+        pandas.DataFrame with messages sent by users, index is the date the messages was sent.
 
     Raises
     ------
@@ -313,8 +313,8 @@ def make_chat_df(log_error, text, hformat):
 
     Returns
     -------
-    pandas.dataframe
-        A pandas.dataframe with three columns, i.e. 'date', 'username', and 'message'
+    pandas.DataFrame
+        A pandas.DataFrame with three columns, i.e. 'date', 'username', and 'message'
     """
     # Bracket is reserved character in RegEx, add backslash before them.
     hformat = hformat.replace('[', r'\[').replace(']', r'\]')
@@ -347,10 +347,10 @@ def parse_chat(log_error, data):
     Returns
     -------
     pandas.dataframe
-        A pandas.dataframe with three columns, i.e. 'date', 'username', and 'message'
+        A pandas.DataFrame with three columns, i.e. 'date', 'username', and 'message'
     """
     for hformat in hformats:
-        # Build dataframe
+        # Build DataFrame
         df = make_chat_df(log_error, data, hformat)
         if df is not None:
              return df
@@ -372,8 +372,8 @@ def decode_chat(log_error, f, filename):
 
     Returns
     -------
-    pandas.dataframe
-        A pandas.dataFrame which includes the content of the given chat file.
+    pandas.DataFrame
+        A pandas.DataFrame which includes the content of the given chat file.
     """
     try:
         data = f.decode("utf-8")
@@ -396,7 +396,7 @@ def parse_zipfile(log_error, zfile):
     Returns
     -------
     list
-        A list of pandas.dataframes which include the content of chat files.
+        A list of pandas.DataFrames which include the content of chat files.
     """
     results = []
     for name in zfile.namelist():
@@ -423,7 +423,7 @@ def input_df(data_path):
 
     Returns
     -------
-    pandas.dataframe
+    pandas.DataFrame
         df_chats and df_participants
     """
     errors = []
@@ -438,16 +438,16 @@ def input_df(data_path):
 
 
 def get_response_matrix(df_chat):
-    """Create a response matrix for the usernames mentioned in the given dataframe.
+    """Create a response matrix for the usernames mentioned in the given DataFrame.
 
     Parameters
     ----------
-    df_chat: padas.dataframe
-        A dataframe including chat data
+    df_chat: padas.DataFrame
+        A DataFrame including chat data
 
     Returns
     -------
-    pandas.dataframe
+    pandas.DataFrame
         A DataFrame with senders in the rows and receivers in the columns
     """
     users = set(df_chat[COLNAMES_DF.USERNAME])
@@ -502,16 +502,16 @@ def anonym_txt(txt, salt):
 def anonymize_participants(df_participants):
     """Anonymize text data.
 
-    Anonymize USERNAME, REPLY_2USER, and USER_REPLY2 columns of the given dataframe.
+    Anonymize USERNAME, REPLY_2USER, and USER_REPLY2 columns of the given DataFrame.
 
     Parameters
     ----------
-    df_participants : pandas.dataframe
-        A dataframe including participants data
+    df_participants : pandas.DataFrame
+        A DataFrame including participants data
 
     Returns
     -------
-    pandas.dataframe
+    pandas.DataFrame
         An anonymized DataFrame
     """
     salt = make_salt()
@@ -526,12 +526,12 @@ def get_participants_features(df_chat):
 
     Parameter
     ----------
-    df_chat : pandas.dataframe
-        A dataframe including chat data
+    df_chat : pandas.DataFrame
+        A DataFrame including chat data
 
     Returns
     -------
-    pandas.dataframe
+    pandas.DataFrame
         A DataFrame which includes participants and their features
     """
     # Calculate the number of words in messages
@@ -581,7 +581,7 @@ def extract_participants_features(chats, anonymize=True):
     Parameters
     ----------
     chats : list
-        List of dataframes including chat data
+        List of DataFrames including chat data
     anonymize : bool
         Indicates if usernames should be anonymized
 
