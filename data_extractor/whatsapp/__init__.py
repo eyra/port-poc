@@ -402,7 +402,7 @@ def anonym_txt(txt, salt):
     return anonymized_txt
 
 
-def anonym_participants(df_participants):
+def anonymize_participants(df_participants):
     """Anonymize usernames mentioned in the given dataframe.
 
                     Args:
@@ -482,7 +482,7 @@ def extract_participants_features(chats, anonymize=True):
     for chat in chats:
         df = get_participants_features(chat)
         if anonymize:
-            df = anonym_participants(df)
+            df = anonymize_participants(df)
         results.append(df)
     return results
 
