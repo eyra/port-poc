@@ -20,7 +20,6 @@ HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 hformats = ['%m/%d/%y, %H:%M - %name:','[%d/%m/%y, %H:%M:%S] %name:','%d-%m-%y %H:%M - %name:']
 
 
-
 class ColnamesDf:
     """Access class constants using variable ``utils.COLNAMES_DF``.
     """
@@ -523,7 +522,6 @@ def process(file_data):
         return [format_errors(errors)]
     participants = extract_participants_features(chats)
     formatted_results = format_results(participants)
-
 
     return formatted_results
 
