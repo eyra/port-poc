@@ -512,15 +512,22 @@ def process(file_data):
     errors = []
     log_error = errors.append
     zfile = None
+    chats = []
     try:
         zfile = zipfile.ZipFile(file_data)
     except:
-        log_error("No zip file is provided")
-        return [format_errors(errors)]
-
-    chats = parse_zipfile(log_error, zfile)
+        if FILE_RE.match(file_data.name):
+            zfile = open(file_data)
+            chat = parse_chat(log_error,zfile.read())
+            chats.append(chat)
+        else:
+            log_error("There is not a valid file format.")
+            return [format_errors(errors)]
+    else:
+        chats = parse_zipfile(log_error, zfile)
     if errors:
         return [format_errors(errors)]
+
     participants = extract_participants_features(chats)
     formatted_results = format_results(participants)
 
