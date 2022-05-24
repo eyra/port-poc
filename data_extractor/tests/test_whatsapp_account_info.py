@@ -26,6 +26,3 @@ def test_process():
     df_result = result[0]["data_frame"]
     assert_frame_equal(df_result, df_expected)
 
-
-if __name__ == '__main__':
-    test_process()
