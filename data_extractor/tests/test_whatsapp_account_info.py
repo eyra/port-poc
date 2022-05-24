@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from data_extractor.whatsapp_account_info import process
+from whatsapp_account_info import process
 from pathlib import Path
 
 
