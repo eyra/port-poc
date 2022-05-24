@@ -44,6 +44,3 @@ def test_process():
     assert_frame_equal(df_result, df_expected)
 
 
-if __name__ == '__main__':
-    test_process()
-
