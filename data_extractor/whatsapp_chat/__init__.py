@@ -1,5 +1,5 @@
 """Parser utils.
-   The main part is extracted from https://github.com/lucasrodes/whatstk.git
+The main part is extracted from https://github.com/lucasrodes/whatstk.git
 """
 __version__ = '0.2.0'
 
@@ -17,13 +17,12 @@ ATTACH_FILE_PATTERN = r'(<attached: \S+>)'
 FILE_RE = re.compile(r".*chat.*.txt$")
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
-hformats = ['%m/%d/%y, %H:%M - %name:','[%d/%m/%y, %H:%M:%S] %name:','%d-%m-%y %H:%M - %name:']
-
+hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:']
 
 
 class ColnamesDf:
-    """Access class constants using variable ``utils.COLNAMES_DF``.
-    """
+    """Access class constants using variable ``utils.COLNAMES_DF``."""
+
     DATE = 'date'
     """Date column"""
 
@@ -99,14 +98,16 @@ regex_simplifier = {
 
 def generate_regex(log_error, hformat):
     r"""Generate regular expression from hformat.
-
-    Args:
-        log_error (list): Includes list of error messages.
-        hformat (str): Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``.
-
-    Returns:
-        str: Regular expression corresponding to the specified syntax.
-
+    Parameters
+    ----------
+    log_error : list
+        List of error messages
+    hformat :str
+        Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``.
+    Returns
+    -------
+    str
+        Regular expression corresponding to the specified syntax
     """
     items = re.findall(r'\%\w*', hformat)
 
@@ -123,10 +124,14 @@ def generate_regex(log_error, hformat):
 
 def add_schema(df):
     """Add default chat schema to df.
-    Args:
-        df (pandas.DataFrame): Chat dataframe.
-    Returns:
-        pandas.DataFrame: Chat dataframe with correct dtypes.
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Chat DataFrame.
+    Returns
+    -------
+    pandas.DataFrame
+        Chat DataFrame with correct dtypes
     """
     df = df.astype({
         COLNAMES_DF.DATE: pd.StringDtype(),
@@ -138,12 +143,18 @@ def add_schema(df):
 
 def parse_line(text, headers, i):
     """Get date, username and message from the i:th intervention.
-    Args:
-        text (str): Whole log chat text.
-        headers (list): All headers.
-        i (int): Index denoting the message number.
-    Returns:
-        dict: i:th date, username and message.
+    Parameters
+    ----------
+    text : str
+        Whole log chat text
+    headers : list
+        All headers.
+    i : int
+        Index denoting the message number
+    Returns
+    -------
+    dict
+        ith date, username and message.
     """
     result_ = headers[i].groupdict()
     if 'ampm' in result_:
@@ -180,11 +191,16 @@ def parse_line(text, headers, i):
 
 def remove_alerts_from_df(r_x, df):
     """Try to get rid of alert/notification messages.
-    Args:
-        r_x (str): Regular expression to detect whatsapp warnings.
-        df (pandas.DataFrame): DataFrame with all interventions.
-    Returns:
-        pandas.DataFrame: Fixed version of input dataframe.
+    Parameters
+    ----------
+    r_x : str
+        Regular expression to detect whatsapp warnings
+    df : pandas.DataFrame
+        pandas.DataFrame with all interventions
+    Returns
+    -------
+    pandas.DataFrame
+        Fixed version of input DataFrame
     """
     df_new = df.copy()
     df_new.loc[:, COLNAMES_DF.MESSAGE] = df_new[COLNAMES_DF.MESSAGE].apply(lambda x: remove_alerts_from_line(r_x, x))
@@ -193,11 +209,16 @@ def remove_alerts_from_df(r_x, df):
 
 def remove_alerts_from_line(r_x, line_df):
     """Remove line content that is not desirable (automatic alerts etc.).
-    Args:
-        r_x (str): Regula expression to detect WhatsApp warnings.
-        line_df (str): Message sent as string.
-    Returns:
-        str: Cleaned message string.
+    Parameters
+    ----------
+    r_x : str
+        Regula expression to detect WhatsApp warnings
+    line_df : str
+        Message sent as string
+    Returns
+    -------
+    str
+        Cleaned message string
     """
     if re.search(r_x, line_df):
         return line_df[:re.search(r_x, line_df).start()]
@@ -207,12 +228,18 @@ def remove_alerts_from_line(r_x, line_df):
 
 def get_message(text, headers, i):
     """Get i:th message from text.
-    Args:
-        text (str): Whole log chat text.
-        headers (list): All headers.
-        i (int): Index denoting the message number.
-    Returns:
-        str: i:th message.
+    Parameters
+    ----------
+        text : str
+            Whole log chat text
+    headers : list
+        All headers
+    i : int
+        Index denoting the message number
+    Returns
+    -------
+    str
+     ith message.
     """
     msg_start = headers[i].end()
     msg_end = headers[i + 1].start() if i < len(headers) - 1 else headers[i].endpos
@@ -222,17 +249,20 @@ def get_message(text, headers, i):
 
 def parse_text(text, regex):
     """Parse chat using given regex.
-
-    Args:
-        text (str) Whole log chat text.
-        regex (str): Regular expression
-
-    Returns:
-        pandas.DataFrame: DataFrame with messages sent by users, index is the date the messages was sent.
-
-    Raises:
-        RegexError: When provided regex could not match the text.
-
+    Parameters
+    ----------
+    text : str
+        Whole log chat text
+    regex : str
+        Regular expression
+    Returns
+    -------
+    pandas.DataFrame
+        pandas.DataFrame with messages sent by users, index is the date the messages was sent.
+    Raises
+    ------
+    RegexError
+        When provided regex could not match the text
     """
     result = []
     headers = list(re.finditer(regex, text))
@@ -255,14 +285,18 @@ def parse_text(text, regex):
 
 def make_chat_df(log_error, text, hformat):
     """Load chat as a DataFrame.
-
-        Args:
-            log_error (list): Includes list of error messages.
-            text (str): Text of the chat
-            hformat (str): Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``.
-
-        Returns:
-            DataFrame: a DataFrame with three columns, i.e. 'date', 'username', and 'message'
+    Parameters
+    ----------
+    log_error : list
+        List of error messages
+    text : str
+        Text of the chat
+    hformat : str
+        Simplified syntax for the header, e.g. ``'%y-%m-%d, %H:%M:%S - %name:'``
+    Returns
+    -------
+    pandas.DataFrame
+        A pandas.DataFrame with three columns, i.e. 'date', 'username', and 'message'
     """
     # Bracket is reserved character in RegEx, add backslash before them.
     hformat = hformat.replace('[', r'\[').replace(']', r'\]')
@@ -283,17 +317,20 @@ def make_chat_df(log_error, text, hformat):
 
 
 def parse_chat(log_error, data):
-    """Parse chat and test it with defined hformats
-
-    Args:
-        log_error (list): Includes list of error messages.
-        data (str): Data read from the chat file
-    Returns:
-        DataFrame: a DataFrame with three columns, i.e. 'date', 'username', and 'message'
-
+    """Parse chat and test it with defined hformats.
+    Parameters
+    ----------
+    log_error : list
+       List of error messages.
+    data : str
+        Data read from the chat file
+    Returns
+    -------
+    pandas.dataframe
+        A pandas.DataFrame with three columns, i.e. 'date', 'username', and 'message'
     """
     for hformat in hformats:
-        # Build dataframe
+        # Build DataFrame
         df = make_chat_df(log_error, data, hformat)
         if df is not None:
              return df
@@ -303,14 +340,18 @@ def parse_chat(log_error, data):
 
 def decode_chat(log_error, f, filename):
     """Parse the given zip file.
-
-            Args:
-                log_error (list): Includes list of error messages.
-                f (bytes): bytes of the file name in the zip file
-                filename (str): Name of a file compressed in the zip file.
-
-            Returns:
-                DataFrames: A dataFrame which includes the content of the given chat file.
+    Parameters
+    ----------
+    log_error : list
+        List of error messages.
+    f : bytes
+        bytes of the file name in the zip file
+    filename : str
+        Name of a compressed file in the zip file.
+    Returns
+    -------
+    pandas.DataFrame
+        A pandas.DataFrame which includes the content of the given chat file.
     """
     try:
         data = f.decode("utf-8")
@@ -322,13 +363,16 @@ def decode_chat(log_error, f, filename):
 
 def parse_zipfile(log_error, zfile):
     """Parse the given zip file.
-
-        Args:
-            log_error (list): Includes list of error messages.
-            zfile (ZipFile object): Regular expression
-
-        Returns:
-            list: A list of DataFrames which include the content of chat files.
+    Parameters
+    ----------
+    log_error : list
+        List of error messages
+    zfile : ZipFile object
+        Regular expression
+    Returns
+    -------
+    list
+        A list of pandas.DataFrames which include the content of chat files.
     """
     results = []
     for name in zfile.namelist():
@@ -346,15 +390,16 @@ def parse_zipfile(log_error, zfile):
 
 
 def input_df(data_path):
-    """Create inputs df_chats and df_participants, used for test purposes
-
-            Args:
-                data_path (str): File path of zip file
-
-            Returns:
-                DataFrames: df_chats and df_participants
+    """Create inputs df_chats and df_participants, used for test purposes.
+    Parameters
+    ----------
+    data_path : str
+        File path of zip file
+    Returns
+    -------
+    pandas.DataFrame
+        df_chats and df_participants
     """
-
     errors = []
     log_error = errors.append
     fp = os.path.join(data_path, "whatsapp_chat.zip")
@@ -367,13 +412,15 @@ def input_df(data_path):
 
 
 def get_response_matrix(df_chat):
-    """Create a response matrix for the usernames mentioned in the given dataframe.
-
-        Args:
-            df_chat (Dataframe): A dataframe including chat data
-
-        Returns:
-            DataFrame: A DataFrame with senders in the rows and receivers in the columns
+    """Create a response matrix for the usernames mentioned in the given DataFrame.
+    Parameters
+    ----------
+    df_chat: padas.DataFrame
+        A DataFrame including chat data
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with senders in the rows and receivers in the columns
     """
     users = set(df_chat[COLNAMES_DF.USERNAME])
     users = sorted(users)
@@ -393,26 +440,47 @@ def get_response_matrix(df_chat):
 
 
 def make_salt():
+    """Return an string as salt for anonym_txt function.
+    Returns
+    -------
+    str
+        The salt value is deliberately set to be a fixed value for all the usernames, because then we can generate the
+        same hashed value for the same value in the UERNAME, REPLY_2USER, and USER_REPLY2 columns.
+    """
     return str.encode('WhatsAppProject@2022')
 
 
 def anonym_txt(txt, salt):
-    #anonymized_txt = hashlib.pbkdf2_hmac('sha256', txt.encode(), salt, 10000).hex()
+    """Define an internal function for calling internally  inside the anonymize_participants function.
+    Parameters
+    ----------
+    txt: str
+        The text that needs to be anonymized
+    salt: str
+        A string added to the input of a hash function to guarantee irreversible hashed values
+    Returns
+    -------
+    str
+        anonymized feature
+    """
     anonymized_txt = hashlib.sha256(salt + txt.encode()).hexdigest()
     return anonymized_txt
 
 
-def anonym_participants(df_participants):
-    """Anonymize usernames mentioned in the given dataframe.
-
-                    Args:
-                        df_participants (Dataframe): A dataframe including participants data
-
-                    Returns:
-                        DataFrame: An anonymized DataFrame
+def anonymize_participants(df_participants):
+    """Anonymize text data.
+    Anonymize USERNAME, REPLY_2USER, and USER_REPLY2 columns of the given DataFrame.
+    Parameters
+    ----------
+    df_participants : pandas.DataFrame
+        A DataFrame including participants data
+    Returns
+    -------
+    pandas.DataFrame
+        An anonymized DataFrame
     """
     salt = make_salt()
-    df_participants[COLNAMES_DF.USERNAME] = df_participants[COLNAMES_DF.USERNAME].apply(lambda u: anonym_txt(u,salt))
+    df_participants[COLNAMES_DF.USERNAME] = df_participants[COLNAMES_DF.USERNAME].apply(lambda u: anonym_txt(u, salt))
     df_participants[COLNAMES_DF.REPLY_2USER] = df_participants[COLNAMES_DF.REPLY_2USER].apply(lambda u: anonym_txt(u,salt))
     df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
     return df_participants
@@ -420,12 +488,14 @@ def anonym_participants(df_participants):
 
 def get_participants_features(df_chat):
     """Calculate participant features from the given chat.
-
-                Args:
-                    df_chat (Dataframe): A dataframe including chat data
-
-                Returns:
-                    DataFrame: A DataFrame which includes participants and their features
+    Parameter
+    ----------
+    df_chat : pandas.DataFrame
+        A DataFrame including chat data
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame which includes participants and their features
     """
     # Calculate the number of words in messages
     df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
@@ -470,19 +540,22 @@ def get_participants_features(df_chat):
 
 def extract_participants_features(chats, anonymize=True):
     """Parse the given zip file.
-
-            Args:
-                chats (list): List of dataframes including chat data
-                anonymize (bool): Indicates if usernames should be anonymized
-
-            Returns:
-                list: A list of DataFrames which include participant features
+    Parameters
+    ----------
+    chats : list
+        List of DataFrames including chat data
+    anonymize : bool
+        Indicates if usernames should be anonymized
+    Returns
+    -------
+    list
+        A list of DataFrames which include participant features
     """
     results = []
     for chat in chats:
         df = get_participants_features(chat)
         if anonymize:
-            df = anonym_participants(df)
+            df = anonymize_participants(df)
         results.append(df)
     return results
 
@@ -490,25 +563,53 @@ def extract_participants_features(chats, anonymize=True):
 
 
 def format_results(df_list):
+    """Format results to the standard format.
+    Parameters
+    ----------
+    df_list: pandas.dataframe
+    Returns
+    -------
+    pandas.dataframe
+    """
     results = []
     for df in df_list:
         results.append(
             {
-            "id": "overview",
-            "title": "The following data is extracted from the file:",
-            "data_frame": df
+                "id": "overview",
+                "title": "The following data is extracted from the file:",
+                "data_frame": df
             }
         )
     return results
 
 
 def format_errors(errors):
+    """Return errors in the format of dataframe.
+    Parameters
+    ----------
+    errors: str
+    Returns
+    -------
+    pandas.dataframe
+    """
     data_frame = pd.DataFrame()
     data_frame["Messages"] = pd.Series(errors, name="Messages")
     return {"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}
 
 
 def process(file_data):
+    """Convert whatsapp chat_file.zip to participants dataframe.
+    This is the main function which extracts the participants
+    information from the row chat_file.zip provided by data-donators.
+    Parameters
+    ----------
+    file_data : str
+        The path of the chat_file.zip
+    Returns
+    -------
+    pandas.dataframe
+        Extracted data from the chat_file
+    """
     errors = []
     log_error = errors.append
     zfile = None
@@ -517,8 +618,8 @@ def process(file_data):
         zfile = zipfile.ZipFile(file_data)
     except:
         if FILE_RE.match(file_data.name):
-            zfile = open(file_data)
-            chat = parse_chat(log_error,zfile.read())
+            zfile = open(file_data, encoding="utf8")
+            chat = parse_chat(log_error, zfile.read())
             chats.append(chat)
         else:
             log_error("There is not a valid file format.")
@@ -531,6 +632,4 @@ def process(file_data):
     participants = extract_participants_features(chats)
     formatted_results = format_results(participants)
 
-
     return formatted_results
-
