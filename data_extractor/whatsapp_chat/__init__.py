@@ -472,6 +472,7 @@ def anonymize_participants(df_participants):
     stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
     df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0],
                                                                              index=stacked.index).unstack()
+    return df_participants
 
 
 def get_participants_features(df_chat):
