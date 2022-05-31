@@ -24,11 +24,11 @@ EXPECTED = [
 
 def test_process():
     """ Test process function.
-    compares the expected dataframe with the output of the process function to check if all the columns are match.
-    Raises
-    -------
-    AssertionError: When provided expected dataframe could not match the participants dataframe
-    """
+        compares the expected dataframe with the output of the process function to check if all the columns are match.
+        Raises
+        -------
+        AssertionError: When provided expected dataframe could not match the participants dataframe
+        """
 
     df_expected = pd.DataFrame(EXPECTED)
     df_expected = anonymize_participants(df_expected)
