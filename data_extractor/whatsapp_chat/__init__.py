@@ -468,8 +468,10 @@ def anonymize_participants(df_participants):
     # df_participants[COLNAMES_DF.REPLY_2USER] = df_participants[COLNAMES_DF.REPLY_2USER].apply(lambda u: anonym_txt(u,salt))
     # df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
     # df_participants[['username', 'user_reply2']] = df_participants[['username', 'user_reply2']].stack().rank(method='dense').unstack()
+
     stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
-    df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
+    df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0],
+                                                                             index=stacked.index).unstack()
     return df_participants
 
 
