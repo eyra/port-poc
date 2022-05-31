@@ -468,16 +468,10 @@ def anonymize_participants(df_participants):
     # df_participants[COLNAMES_DF.REPLY_2USER] = df_participants[COLNAMES_DF.REPLY_2USER].apply(lambda u: anonym_txt(u,salt))
     # df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
     # df_participants[['username', 'user_reply2']] = df_participants[['username', 'user_reply2']].stack().rank(method='dense').unstack()
-<<<<<<< HEAD
 
     stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
     df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0],
                                                                              index=stacked.index).unstack()
-=======
-    stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
-    df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
->>>>>>> d829bda8a15ba92e577e3f07c4529d78cb8c02fb
-    return df_participants
 
 
 def get_participants_features(df_chat):
