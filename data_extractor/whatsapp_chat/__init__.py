@@ -9,6 +9,7 @@ from datetime import datetime
 import pandas as pd
 import hashlib
 import zipfile
+from pathlib import Path
 
 
 URL_PATTERN = r'(https?://\S+)'
@@ -439,32 +440,15 @@ def get_response_matrix(df_chat):
     return responses
 
 
-def make_salt():
-    """Return an string as salt for anonym_txt function.
-    Returns
-    -------
-    str
-        The salt value is deliberately set to be a fixed value for all the usernames, because then we can generate the
-        same hashed value for the same value in the UERNAME, REPLY_2USER, and USER_REPLY2 columns.
-    """
-    return str.encode('WhatsAppProject@2022')
-
-
-def anonym_txt(txt, salt):
-    """Define an internal function for calling internally  inside the anonymize_participants function.
-    Parameters
-    ----------
-    txt: str
-        The text that needs to be anonymized
-    salt: str
-        A string added to the input of a hash function to guarantee irreversible hashed values
-    Returns
-    -------
-    str
-        anonymized feature
-    """
-    anonymized_txt = hashlib.sha256(salt + txt.encode()).hexdigest()
-    return anonymized_txt
+# def make_salt():
+#     """Return an string as salt for anonym_txt function.
+#     Returns
+#     -------
+#     str
+#         The salt value is deliberately set to be a fixed value for all the usernames, because then we can generate the
+#         same hashed value for the same value in the UERNAME, REPLY_2USER, and USER_REPLY2 columns.
+#     """
+#     return str.encode('WhatsAppProject@2022')
 
 
 def anonymize_participants(df_participants):
@@ -479,10 +463,13 @@ def anonymize_participants(df_participants):
     pandas.DataFrame
         An anonymized DataFrame
     """
-    salt = make_salt()
-    df_participants[COLNAMES_DF.USERNAME] = df_participants[COLNAMES_DF.USERNAME].apply(lambda u: anonym_txt(u, salt))
-    df_participants[COLNAMES_DF.REPLY_2USER] = df_participants[COLNAMES_DF.REPLY_2USER].apply(lambda u: anonym_txt(u,salt))
-    df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
+    # salt = make_salt()
+    # df_participants[COLNAMES_DF.USERNAME] = df_participants[COLNAMES_DF.USERNAME].apply(lambda u: anonym_txt(u, salt))
+    # df_participants[COLNAMES_DF.REPLY_2USER] = df_participants[COLNAMES_DF.REPLY_2USER].apply(lambda u: anonym_txt(u,salt))
+    # df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
+    # df_participants[['username', 'user_reply2']] = df_participants[['username', 'user_reply2']].stack().rank(method='dense').unstack()
+    stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
+    df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
     return df_participants
 
 
@@ -633,3 +620,4 @@ def process(file_data):
     formatted_results = format_results(participants)
 
     return formatted_results
+
