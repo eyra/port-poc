@@ -488,6 +488,10 @@ def get_participants_features(df_chat):
     pandas.DataFrame
         A DataFrame which includes participants and their features
     """
+    # Calculate first message date
+    df_chat[COLNAMES_DF.FirstMessage] = df_chat[COLNAMES_DF.DATE].astype('datetime64[ns]')
+    # Calculate last message date
+    df_chat[COLNAMES_DF.LastMessage] = df_chat[COLNAMES_DF.DATE].astype('datetime64[ns]')
     # Calculate the number of words in messages
     df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
     # number of ulrs
@@ -506,7 +510,9 @@ def get_participants_features(df_chat):
         COLNAMES_DF.URL_NO: 'sum',
         COLNAMES_DF.LOCATION_NO: 'sum',
         COLNAMES_DF.FILE_NO: 'sum',
-        COLNAMES_DF.MESSAGE_NO: 'sum'
+        COLNAMES_DF.MESSAGE_NO: 'sum',
+        COLNAMES_DF.FirstMessage: 'min',
+        COLNAMES_DF.LastMessage: 'max'
     }).reset_index()
 
     response_matrix = get_response_matrix(df_chat)
@@ -624,4 +630,3 @@ def process(file_data):
     formatted_results = format_results(participants)
 
     return formatted_results
-
