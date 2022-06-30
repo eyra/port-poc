@@ -10,15 +10,21 @@ import pandas as pd
 import hashlib
 import zipfile
 from pathlib import Path
+#from nltk.corpus import stopwords
+#from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 URL_PATTERN = r'(https?://\S+)'
 LOCATION_PATTERN = r'(Location: https?://\S+)'
 ATTACH_FILE_PATTERN = r'(<attached: \S+>)'
-FILE_RE = re.compile(r".*chat.*.txt$")
+FILE_RE = re.compile(r".*.txt$")
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
-hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:']
+SYSTEM_MESSAGES=[
+    'Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.',
+    'Berichten en gesprekken worden end-to-end versleuteld. Niemand buiten deze chat kan ze lezen of beluisteren, zelfs WhatsApp niet.'
+]
+hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:', '[%d-%m-%y %H:%M:%S] %name:']
 
 
 class ColnamesDf:
@@ -36,16 +42,16 @@ class ColnamesDf:
     MESSAGE_LENGTH = 'message_length'
     """Message length column"""
 
-    FirstMessage = 'first_message_date'
+    FirstMessage = 'Date first message' #'first_message_date'
     """Date of first message column"""
 
-    LastMessage = 'last_message_date'
+    LastMessage = 'Date last message' #'last_message_date'
     """Date of last message column"""
 
-    MESSAGE_NO = 'message_no'
+    MESSAGE_NO = 'Number of messages' #'message_no'
     """Number of Message  column"""
 
-    WORDS_NO = 'total_words_no'
+    WORDS_NO = 'Total number of words' #'total_words_no'
     """Total number of words  column"""
 
     REPLY_2USER = 'reply_2_user'
@@ -57,13 +63,13 @@ class ColnamesDf:
     USER_REPLY2 = 'user_reply2'
     """User replies to who the most column"""
 
-    URL_NO = 'url_no'
+    URL_NO = 'Number of URLs'#,'url_no'
     """Number of URLs column"""
 
-    LOCATION_NO = 'location_no'
+    LOCATION_NO = 'Number of shared locations'#'location_no'
     """Number of locations column"""
 
-    FILE_NO = 'file_no'
+    FILE_NO = 'Number of shared files'#'file_no'
     """Number of files column"""
 
     OUT_DEGREE = 'out_degree'
@@ -77,6 +83,12 @@ class ColnamesDf:
 
     EMOJI_Fav = 'emoji_fav'
     """Favorite emojies column"""
+
+    DESCRIPTION = 'Description'
+    """Variable column in melted dataframe"""
+
+    VALUE = 'Value'
+    """Value column in melted dataframe"""
 
 
 COLNAMES_DF = ColnamesDf()
@@ -372,20 +384,20 @@ def parse_zipfile(log_error, zfile):
         Regular expression
     Returns
     -------
-    list
-        A list of pandas.DataFrames which include the content of chat files.
+    pandas.DataFrame
+        A pandas.DataFrames which include the content of the chat file.
     """
-    results = []
     for name in zfile.namelist():
         if HIDDEN_FILE_RE.match(name):
             continue
         if not FILE_RE.match(name):
             continue
-        chats = decode_chat(log_error,zfile.read(name),name)
-        results.append(chats)
-    if len(results)==0:
+        chat = decode_chat(log_error,zfile.read(name),name)
+
+    if chat is None:
         log_error("No valid chat file is available")
-    return results
+
+    return chat
 
 # *** test related function ***
 
@@ -405,9 +417,9 @@ def input_df(data_path):
     log_error = errors.append
     fp = os.path.join(data_path, "whatsapp_chat.zip")
     zfile = zipfile.ZipFile(fp)
-    chats = parse_zipfile(log_error, zfile)
-    participants = extract_participants_features(chats, anonymize=False)
-    return chats[0], participants[0]
+    chat = parse_zipfile(log_error, zfile)
+    participants = extract_participants_features(chat, anonymize=False)
+    return chat, participants
 
 # *** analysis functions ***
 
@@ -477,6 +489,39 @@ def anonymize_participants(df_participants):
     return df_participants
 
 
+def get_df_per_participant(df, anonymize):
+    """Generate one dataframe for each participant .
+        Parameter
+        ----------
+        df : pandas.DataFrame
+           A DataFrame which includes participants and their features
+
+        anonymize : bool
+            Indicates if usernames should be anonymized
+        Returns
+        -------
+        list pandas.DataFrame
+            A list of pandas.DataFrame. Each data frame includes the description of features and their values extracted
+            from a specific participant
+        """
+    results = []
+    df_melt = pd.melt(df, id_vars=[COLNAMES_DF.USERNAME], value_vars=[COLNAMES_DF.WORDS_NO, COLNAMES_DF.MESSAGE_NO,
+                                                                      COLNAMES_DF.FirstMessage, COLNAMES_DF.LastMessage,
+                                                                      COLNAMES_DF.URL_NO, COLNAMES_DF.FILE_NO,
+                                                                      COLNAMES_DF.LOCATION_NO],
+                      var_name=COLNAMES_DF.DESCRIPTION, value_name=COLNAMES_DF.VALUE)
+
+    usernames = set(df_melt[COLNAMES_DF.USERNAME])
+    for u in usernames:
+        df_user = df_melt[(df_melt[COLNAMES_DF.USERNAME] == u) &
+                          df_melt[COLNAMES_DF.VALUE] != 0]
+        # if anonymize:
+        #     df_user = anonymize_participants(df_user)
+        results.append(df_user)
+
+    return results
+
+
 def get_participants_features(df_chat):
     """Calculate participant features from the given chat.
     Parameter
@@ -534,13 +579,30 @@ def get_participants_features(df_chat):
 
     return df_participants
 
+def remove_system_messages(chat):
+    """Removes system messages from chat
+    Parameters
+    ----------
+    chat : pandas.DataFrame
+        A DataFrame that includes chat data
+    Returns
+    -------
+    pandas.DataFrame
+        A filtered dataframe
+    """
+    print(chat.loc[0,COLNAMES_DF.MESSAGE])
+    print(SYSTEM_MESSAGES[1])
+    for m in SYSTEM_MESSAGES:
+        group_name = chat.loc[chat[COLNAMES_DF.MESSAGE]==m,COLNAMES_DF.USERNAME]
+        print(group_name)
+    return chat
 
-def extract_participants_features(chats, anonymize=True):
+def extract_participants_features(chat, anonymize=True):
     """Parse the given zip file.
     Parameters
     ----------
-    chats : list
-        List of DataFrames including chat data
+    chat : pandas.DataFrame
+        A DataFrame that includes chat data
     anonymize : bool
         Indicates if usernames should be anonymized
     Returns
@@ -548,12 +610,9 @@ def extract_participants_features(chats, anonymize=True):
     list
         A list of DataFrames which include participant features
     """
-    results = []
-    for chat in chats:
-        df = get_participants_features(chat)
-        if anonymize:
-            df = anonymize_participants(df)
-        results.append(df)
+
+    df = get_participants_features(chat)
+    results = get_df_per_participant(df, anonymize)
     return results
 
 # ***** end of analysis functions *****
@@ -570,11 +629,12 @@ def format_results(df_list):
     """
     results = []
     for df in df_list:
+        user_name = pd.unique(df[COLNAMES_DF.USERNAME])[0]
         results.append(
             {
-                "id": "overview",
-                "title": "The following data is extracted from the file:",
-                "data_frame": df
+                "id": user_name,#"overview",
+                "title": user_name,#"The following data is extracted from the file:",
+                "data_frame": df[[COLNAMES_DF.DESCRIPTION,COLNAMES_DF.VALUE]].reset_index(drop=True)
             }
         )
     return results
@@ -610,23 +670,25 @@ def process(file_data):
     errors = []
     log_error = errors.append
     zfile = None
-    chats = []
+    #chats = []
     try:
         zfile = zipfile.ZipFile(file_data)
     except:
         if FILE_RE.match(file_data.name):
-            zfile = open(file_data, encoding="utf8")
-            chat = parse_chat(log_error, zfile.read())
-            chats.append(chat)
+            tfile = open(file_data, encoding="utf8")
+            chat = parse_chat(log_error, tfile.read())
+            #chats.append(chat)
         else:
             log_error("There is not a valid file format.")
             return [format_errors(errors)]
     else:
-        chats = parse_zipfile(log_error, zfile)
+        chat = parse_zipfile(log_error, zfile)
     if errors:
         return [format_errors(errors)]
 
-    participants = extract_participants_features(chats)
+    print(chat)
+    chat = remove_system_messages(chat)
+    participants = extract_participants_features(chat)
     formatted_results = format_results(participants)
 
     return formatted_results
