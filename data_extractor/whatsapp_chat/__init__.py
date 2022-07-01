@@ -481,11 +481,17 @@ def anonymize_participants(df_participants):
     # df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
     # df_participants[['username', 'user_reply2']] = df_participants[['username', 'user_reply2']].stack().rank(method='dense').unstack()
 
-    stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
-    df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0],
-                                                                             index=stacked.index).unstack()
-    df_participants[['username', 'user_reply2', 'reply_2_user']] = 'person' + df_participants[['username', 'user_reply2',
-                                                                                        'reply_2_user']].astype(str)
+    # stacked = df_participants[['username', 'user_reply2', 'reply_2_user']].stack()
+    # df_participants[['username', 'user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0],
+    #                                                                          index=stacked.index).unstack()
+    # df_participants[['username', 'user_reply2', 'reply_2_user']] = 'person' + df_participants[['username', 'user_reply2',
+    #                                                                                     'reply_2_user']].astype(str)
+    #
+
+    df_participants['username'] = pd.factorize(df_participants.username)[0] + 1
+    df_participants['username'] = 'person' + df_participants['username'].astype(str)
+
+
     return df_participants
 
 
@@ -511,7 +517,8 @@ def get_df_per_participant(df, anonymize):
                                                                       COLNAMES_DF.LOCATION_NO],
                       var_name=COLNAMES_DF.DESCRIPTION, value_name=COLNAMES_DF.VALUE)
 
-    usernames = set(df_melt[COLNAMES_DF.USERNAME])
+    # usernames = set(df_melt[COLNAMES_DF.USERNAME])
+    usernames = df_melt[COLNAMES_DF.USERNAME].unique()
     for u in usernames:
         df_user = df_melt[(df_melt[COLNAMES_DF.USERNAME] == u) &
                           df_melt[COLNAMES_DF.VALUE] != 0]
@@ -590,11 +597,11 @@ def remove_system_messages(chat):
     pandas.DataFrame
         A filtered dataframe
     """
-    print(chat.loc[0,COLNAMES_DF.MESSAGE])
-    print(SYSTEM_MESSAGES[1])
+    # print(chat.loc[0,COLNAMES_DF.MESSAGE])
+    # print(SYSTEM_MESSAGES[1])
     for m in SYSTEM_MESSAGES:
         group_name = chat.loc[chat[COLNAMES_DF.MESSAGE]==m,COLNAMES_DF.USERNAME]
-        print(group_name)
+        # print(group_name)
     return chat
 
 def extract_participants_features(chat, anonymize=True):
@@ -686,7 +693,7 @@ def process(file_data):
     if errors:
         return [format_errors(errors)]
 
-    print(chat)
+    # print(chat)
     chat = remove_system_messages(chat)
     participants = extract_participants_features(chat)
     formatted_results = format_results(participants)
