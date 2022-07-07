@@ -36,16 +36,16 @@ class ColnamesDf:
     MESSAGE_LENGTH = 'message_length'
     """Message length column"""
 
-    FirstMessage = 'Date first message' #'first_message_date'
+    FirstMessage = 'Date first message'
     """Date of first message column"""
 
-    LastMessage = 'Date last message' #'last_message_date'
+    LastMessage = 'Date last message'
     """Date of last message column"""
 
-    MESSAGE_NO = 'Number of messages' #'message_no'
+    MESSAGE_NO = 'Number of messages'
     """Number of Message  column"""
 
-    WORDS_NO = 'Total number of words' #'total_words_no'
+    WORDS_NO = 'Total number of words'
     """Total number of words  column"""
 
     REPLY_2USER = 'reply_2_user'
@@ -57,13 +57,13 @@ class ColnamesDf:
     USER_REPLY2 = 'user_reply2'
     """User replies to who the most column"""
 
-    URL_NO = 'Number of URLs'#,'url_no'
+    URL_NO = 'Number of URLs'
     """Number of URLs column"""
 
-    LOCATION_NO = 'Number of shared locations'#'location_no'
+    LOCATION_NO = 'Number of shared locations'
     """Number of locations column"""
 
-    FILE_NO = 'Number of shared files'#'file_no'
+    FILE_NO = 'Number of shared files'
     """Number of files column"""
 
     OUT_DEGREE = 'out_degree'
@@ -475,9 +475,9 @@ def anonymize_participants(df_participants):
     # df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
     # df_participants[['username', 'user_reply2']] = df_participants[['username', 'user_reply2']].stack().rank(method='dense').unstack()
 
-    stacked = df_participants[['username']].stack() #, 'user_reply2', 'reply_2_user'
-    df_participants[['username']] = pd.Series(stacked.factorize()[0], index=stacked.index).unstack() #, 'user_reply2', 'reply_2_user'
-    df_participants[['username']] = 'person' + df_participants[['username']].astype(str)
+    stacked = df_participants[['username','user_reply2', 'reply_2_user']].stack()
+    df_participants[['username','user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
+    df_participants[['username','user_reply2', 'reply_2_user']] = 'person' + df_participants[['username','user_reply2', 'reply_2_user']].astype(str)
     return df_participants
 
 
@@ -500,7 +500,9 @@ def get_df_per_participant(df):
     df_melt = pd.melt(df, id_vars=[COLNAMES_DF.USERNAME], value_vars=[COLNAMES_DF.WORDS_NO, COLNAMES_DF.MESSAGE_NO,
                                                                       COLNAMES_DF.FirstMessage, COLNAMES_DF.LastMessage,
                                                                       COLNAMES_DF.URL_NO, COLNAMES_DF.FILE_NO,
-                                                                      COLNAMES_DF.LOCATION_NO],
+                                                                      COLNAMES_DF.LOCATION_NO,
+                                                                      COLNAMES_DF.REPLY_2USER,
+                                                                      COLNAMES_DF.USER_REPLY2],
                       var_name=COLNAMES_DF.DESCRIPTION, value_name=COLNAMES_DF.VALUE)
 
     usernames = sorted(set(df_melt[COLNAMES_DF.USERNAME]))
@@ -550,6 +552,18 @@ def get_participants_features(df_chat):
         COLNAMES_DF.FirstMessage: 'min',
         COLNAMES_DF.LastMessage: 'max'
     }).reset_index()
+
+    response_matrix = get_response_matrix(df_chat)
+    user_reply2 = response_matrix.idxmax(axis=1)
+    reply2_user = response_matrix.T.idxmax(axis=1)
+
+    response_matrix[COLNAMES_DF.USER_REPLY2] = user_reply2
+    response_matrix[COLNAMES_DF.REPLY_2USER] = reply2_user
+    response_matrix.index.name = COLNAMES_DF.USERNAME
+    response_matrix = response_matrix.loc[:,[COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]]
+    response_matrix = response_matrix.reset_index()
+
+    df_participants = pd.merge(df_participants, response_matrix, how="left", on=COLNAMES_DF.USERNAME, validate="1:1")
 
     return df_participants
 
