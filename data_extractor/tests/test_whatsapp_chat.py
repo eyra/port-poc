@@ -11,7 +11,7 @@ DATA_PATH = Path(__file__).parent / "data"
 
 EXPECTED = [
     {'username': 'person1', 'Total number of words': 20, 'Number of URLs': 1,
-     'Number of shared locations': 1,'file_no': 0, 'Number of messages': 3,
+     'Number of shared locations': 1, 'file_no': 0, 'Number of messages': 3,
      'Date first message': pd.to_datetime('2022-03-16 15:20:25'),
      'Date last message': pd.to_datetime('2022-03-24 20:19:38'),
      'user_reply2': 'person2', 'reply_2_user': 'person2'},
