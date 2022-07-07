@@ -1,34 +1,29 @@
 from data_extractor.whatsapp_chat import process
 from data_extractor.whatsapp_chat import anonymize_participants
-from data_extractor.whatsapp_chat import get_df_per_participant
 from pathlib import Path
 import pandas as pd
 from pandas.testing import assert_frame_equal
-
-
 
 
 DATA_PATH = Path(__file__).parent / "data"
 
 EXPECTED = [
     {'username': 'person1', 'Total number of words': 20, 'Number of URLs': 1, 'Number of shared locations': 1, 'file_no': 0, 'Number of messages': 3,
-     'Date first message': pd.to_datetime('2022-03-16 15:20:25'), 'Date last message': pd.to_datetime('2022-03-24 20:19:38')},
+     'Date first message': pd.to_datetime('2022-03-16 15:20:25'), 'Date last message': pd.to_datetime('2022-03-24 20:19:38'),
+     'user_reply2': 'person2', 'reply_2_user': 'person2'},
 
     {'username': 'person2', 'Total number of words': 7, 'Number of URLs': 1, 'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 3,
-     'Date first message': pd.to_datetime('2022-03-16 15:25:38'), 'Date last message': pd.to_datetime('2022-03-26 18:52:15')},
+     'Date first message': pd.to_datetime('2022-03-16 15:25:38'), 'Date last message': pd.to_datetime('2022-03-26 18:52:15'),
+     'user_reply2': 'person1', 'reply_2_user': 'person1'},
 
     {'username': 'person3', 'Total number of words': 1, 'Number of URLs': 0, 'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 1,
-     'Date first message': pd.to_datetime('2022-03-16 15:26:48'), 'Date last message': pd.to_datetime('2022-03-16 15:26:48')},
+     'Date first message': pd.to_datetime('2022-03-16 15:26:48'), 'Date last message': pd.to_datetime('2022-03-16 15:26:48'),
+     'user_reply2': 'person2', 'reply_2_user': 'person2'},
 
     {'username': 'person4', 'Total number of words': 21, 'Number of URLs': 0, 'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 2,
-     'Date first message': pd.to_datetime('2020-07-14 22:05:54'), 'Date last message': pd.to_datetime('2022-03-20 20:08:51')}
+     'Date first message': pd.to_datetime('2020-07-14 22:05:54'), 'Date last message': pd.to_datetime('2022-03-20 20:08:51'),
+     'user_reply2': 'person1', 'reply_2_user': 'person1'}
 ]
-
-# EXPECTED_1 = {'Description': ['Total number of words', 'Number of messages', 'Date first message', 'Date last message',
-#                               'Number of URLs', 'Number of shared locations'],
-#               'Value': [20, 3, pd.to_datetime('2022-03-16 15:20:25'), pd.to_datetime('2022-03-24 20:19:38'), 1, 1]}
-#
-# df_expected_1 = pd.DataFrame(data=EXPECTED_1)
 
 
 def test_process():
@@ -49,7 +44,8 @@ def test_process():
     results = []
     df_melt = pd.melt(df_expected, id_vars=["username"],
                       value_vars=["Total number of words", "Number of messages", "Date first message", "Date last message",
-                                  "Number of URLs", "file_no", "Number of shared locations"], var_name='Description', value_name='Value')
+                                  "Number of URLs", "file_no", "Number of shared locations", "reply_2_user", "user_reply2"],
+                      var_name='Description', value_name='Value')
 
     usernames = df_melt["username"].unique()
     for u in usernames:
@@ -66,26 +62,13 @@ def test_process():
                 "data_frame": df[["Description", "Value"]].reset_index(drop=True)
             }
         )
-    # print(type(expected_results[0]["data_frame"]))
-    # print(expected_results[1]["data_frame"])
-    # print('******')
 
-    # result = process(DATA_PATH.joinpath("whatsapp_chat.zip"))
     df_result = process(DATA_PATH.joinpath("_chat.txt"))
-    # print(df_result[1]["data_frame"])
+
     assert_frame_equal(df_result[0]["data_frame"], expected_results[0]["data_frame"])
     assert_frame_equal(df_result[1]["data_frame"], expected_results[1]["data_frame"])
     assert_frame_equal(df_result[2]["data_frame"], expected_results[2]["data_frame"])
     assert_frame_equal(df_result[3]["data_frame"], expected_results[3]["data_frame"])
-
-    # print(type(df_result[0]["data_frame"]))
-    # print(df_result[0]["data_frame"])
-    # print(df_expected_1)
-    #
-    # # assert len(result_file) == 1
-    #
-    #
-    # assert_frame_equal(df_result[0]["data_frame"], df_expected_1)
 
 
 if __name__ == "__main__":
