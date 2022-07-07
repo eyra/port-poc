@@ -1,5 +1,5 @@
-from data_extractor.whatsapp_chat import process
-from data_extractor.whatsapp_chat import anonymize_participants
+from whatsapp_chat import process
+from whatsapp_chat import anonymize_participants
 from pathlib import Path
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -71,7 +71,5 @@ def test_process():
     assert_frame_equal(df_result[3]["data_frame"], expected_results[3]["data_frame"])
 
 
-if __name__ == "__main__":
-    test_process()
 
 
