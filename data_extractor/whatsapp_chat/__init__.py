@@ -7,9 +7,8 @@ import os
 import re
 from datetime import datetime
 import pandas as pd
-import hashlib
 import zipfile
-from pathlib import Path
+
 
 URL_PATTERN = r'(https?://\S+)'
 LOCATION_PATTERN = r'(Location: https?://\S+)'
@@ -51,9 +50,6 @@ class ColnamesDf:
     REPLY_2USER = 'Who replies to you the most often?'
     """Who replies to the user the most column"""
 
-    MAX_REPLY_2 = 'max_reply_2'
-    """User replies to who the most column"""
-
     USER_REPLY2 = 'Who do you most often reply to?'
     """User replies to who the most column"""
 
@@ -65,12 +61,6 @@ class ColnamesDf:
 
     FILE_NO = 'Number of shared files'
     """Number of files column"""
-
-    OUT_DEGREE = 'out_degree'
-    """Total number of sent message column"""
-
-    IN_DEGREE = 'in_degree'
-    """Total number of received message column"""
 
     EMOJI_NO = 'emoji_no'
     """Total number of emojies column"""
@@ -209,9 +199,11 @@ def remove_alerts_from_df(r_x, df):
     pandas.DataFrame
         Fixed version of input DataFrame
     """
+
+    alerts_no = count_alerts(r_x, df)
     df_new = df.copy()
     df_new.loc[:, COLNAMES_DF.MESSAGE] = df_new[COLNAMES_DF.MESSAGE].apply(lambda x: remove_alerts_from_line(r_x, x))
-    return df_new
+    return df_new,alerts_no
 
 
 def remove_alerts_from_line(r_x, line_df):
@@ -228,9 +220,30 @@ def remove_alerts_from_line(r_x, line_df):
         Cleaned message string
     """
     if re.search(r_x, line_df):
+        print(line_df[:re.search(r_x, line_df).start()])
         return line_df[:re.search(r_x, line_df).start()]
     else:
         return line_df
+
+
+def count_alerts(r_x, df):
+    """Count line content that is not desirable (automatic alerts etc.).
+    Parameters
+    ----------
+    r_x : str
+        Regula expression to detect WhatsApp warnings
+    df : pandas.DataFrame
+        pandas.DataFrame with all interventions
+
+    Returns
+    -------
+    int
+        Number of line contents that is not desirable
+    """
+
+    # alerts_count = df[COLNAMES_DF.MESSAGE].apply(lambda x: (re.search(r_x, x) is not None))
+    alerts_count = df[COLNAMES_DF.MESSAGE].apply(lambda x: re.findall(r_x, x))
+    return alerts_count.str.len().sum()
 
 
 def get_message(text, headers, i):
@@ -314,8 +327,11 @@ def make_chat_df(log_error, text, hformat):
     # Parse chat to DataFrame
     try:
         df = parse_text(text, r)
-        df = remove_alerts_from_df(r_x, df)
+        df, alerts_no = remove_alerts_from_df(r_x, df)
         df = add_schema(df)
+
+        if alerts_no>0:
+            log_error("Number of unprocessed system messages: "+str(alerts_no))
 
         return df
     except:
@@ -483,7 +499,7 @@ def anonymize_participants(df_participants):
     return df_participants
 
 
-def get_df_per_participant(df):
+def get_wide_to_long_participant(df):
     """Generate one dataframe for each participant .
         Parameter
         ----------
@@ -569,7 +585,7 @@ def get_participants_features(df_chat):
 
     return df_participants
 
-def remove_system_messages(chat):
+def remove_system_messages(log_error, chat):
     """Removes system messages from chat
     Parameters
     ----------
@@ -585,6 +601,7 @@ def remove_system_messages(chat):
     is_system_message = True if all(s in message0 for s in SYSTEM_MESSAGES) else False
     if is_system_message:
         group_name = chat.loc[0, COLNAMES_DF.USERNAME]
+        log_error("Identified group name:"+group_name)
         chat = chat.loc[chat[COLNAMES_DF.USERNAME] != group_name,]
 
     return chat
@@ -607,13 +624,13 @@ def extract_participants_features(chat, anonymize=True):
     if anonymize:
         df= anonymize_participants(df)
 
-    results = get_df_per_participant(df)
+    results = get_wide_to_long_participant(df)
     return results
 
 # ***** end of analysis functions *****
 
 
-def format_results(df_list):
+def format_results(df_list, error):
     """Format results to the standard format.
     Parameters
     ----------
@@ -627,11 +644,13 @@ def format_results(df_list):
         user_name = pd.unique(df[COLNAMES_DF.USERNAME])[0]
         results.append(
             {
-                "id": user_name,#"overview",
-                "title": user_name,#"The following data is extracted from the file:",
+                "id": user_name,
+                "title": user_name,
                 "data_frame": df[[COLNAMES_DF.DESCRIPTION,COLNAMES_DF.VALUE]].reset_index(drop=True)
             }
         )
+    if len(error)>0:
+        results = results+error
     return results
 
 
@@ -644,9 +663,11 @@ def format_errors(errors):
     -------
     pandas.dataframe
     """
+    if len(errors) == 0:
+        return []
     data_frame = pd.DataFrame()
     data_frame["Messages"] = pd.Series(errors, name="Messages")
-    return {"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}
+    return [{"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}]
 
 
 def process(file_data):
@@ -674,14 +695,17 @@ def process(file_data):
 
         else:
             log_error("There is not a valid file format.")
-            return [format_errors(errors)]
+            return format_errors(errors)
     else:
         chat = parse_zipfile(log_error, zfile)
-    if errors:
-        return [format_errors(errors)]
 
-    chat = remove_system_messages(chat)
-    participants = extract_participants_features(chat)
-    formatted_results = format_results(participants)
+    if chat is not None:
+        chat = remove_system_messages(log_error,chat)
+        participants = extract_participants_features(chat)
+
+        formatted_results = format_results(participants, format_errors(errors))
+
+    else:
+        return format_errors(errors)
 
     return formatted_results
