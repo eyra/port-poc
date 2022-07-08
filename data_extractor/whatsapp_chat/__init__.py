@@ -48,13 +48,13 @@ class ColnamesDf:
     WORDS_NO = 'Total number of words'
     """Total number of words  column"""
 
-    REPLY_2USER = 'reply_2_user'
+    REPLY_2USER = 'Who replies to you the most often?'
     """Who replies to the user the most column"""
 
     MAX_REPLY_2 = 'max_reply_2'
     """User replies to who the most column"""
 
-    USER_REPLY2 = 'user_reply2'
+    USER_REPLY2 = 'Who do you most often reply to?'
     """User replies to who the most column"""
 
     URL_NO = 'Number of URLs'
@@ -475,9 +475,11 @@ def anonymize_participants(df_participants):
     # df_participants[COLNAMES_DF.USER_REPLY2] = df_participants[COLNAMES_DF.USER_REPLY2].apply(lambda u: anonym_txt(u,salt))
     # df_participants[['username', 'user_reply2']] = df_participants[['username', 'user_reply2']].stack().rank(method='dense').unstack()
 
-    stacked = df_participants[['username','user_reply2', 'reply_2_user']].stack()
-    df_participants[['username','user_reply2', 'reply_2_user']] = pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
-    df_participants[['username','user_reply2', 'reply_2_user']] = 'person' + df_participants[['username','user_reply2', 'reply_2_user']].astype(str)
+    stacked = df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].stack()
+    df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
+        pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
+    df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
+        'person' + df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].astype(str)
     return df_participants
 
 
