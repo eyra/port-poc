@@ -10,9 +10,10 @@ import pandas as pd
 import zipfile
 
 
-URL_PATTERN = r'(https?://\S+)'
-LOCATION_PATTERN = r'(Location: https?://\S+)'
-ATTACH_FILE_PATTERN = r'(<attached: \S+>)'
+URL_PATTERN = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+LOCATION_PATTERN = r'((L|l)ocation: https?://\S+)|((l|L)ocatie: https?://\S+)|(.*(l|L)ive locatie gedeeld.*)|(.*(l|L)ive location shared.*)'
+ATTACH_FILE_PATTERN = r'(<attached: \S+>)|(<Media (weggelaten|omitted)>)|((afbeelding|GIF|video|image|audio|(s|S)ticker|.*document.*) (weggelaten|omitted))'
+
 FILE_RE = re.compile(r".*.txt$")
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
@@ -220,7 +221,6 @@ def remove_alerts_from_line(r_x, line_df):
         Cleaned message string
     """
     if re.search(r_x, line_df):
-        print(line_df[:re.search(r_x, line_df).start()])
         return line_df[:re.search(r_x, line_df).start()]
     else:
         return line_df
