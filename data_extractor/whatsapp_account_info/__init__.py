@@ -10,10 +10,10 @@ FILE_RE = re.compile(r".*.json$")
 
 
 class ColnamesDf:
-    GROUPS = 'groups'
+    GROUPS = 'wa_groups'
     """Groups column"""
 
-    CONTACTS = 'contacts'
+    CONTACTS = 'wa_contacts'
     """Contacts column"""
 
 
@@ -38,23 +38,32 @@ def format_errors(errors):
     return {"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}
 
 
-def extract_data(log_error, data):
-    # data = pd.read_csv('whatsapp/df_chat.csv')
-    # return 1,1
+def extract_groups(log_error, data):
+
     groups_no = 0
-    contacts_no = 0
     try:
         groups_no = len(data[COLNAMES_DF.GROUPS])
     except (TypeError, KeyError) as e:
         print("No group is available")
+
+    if groups_no == 0:
+        log_error("No group is available")
+
+    return groups_no
+
+
+def extract_contacts(log_error, data):
+
+    contacts_no = 0
+
     try:
         contacts_no = len(data[COLNAMES_DF.CONTACTS])
     except (TypeError, KeyError) as e:
         print("No contact is available")
 
-    if (groups_no == 0) and (contacts_no == 0):
-        log_error("Neither group nor contact is available")
-    return groups_no, contacts_no
+    if contacts_no == 0:
+        log_error("No contact is available")
+    return contacts_no
 
 
 def parse_records(log_error, f):
@@ -68,11 +77,19 @@ def parse_records(log_error, f):
 
 def parse_zipfile(log_error, zfile):
     for name in zfile.namelist():
-        if HIDDEN_FILE_RE.match(name):
-            continue
-        if not FILE_RE.match(name):
-            continue
-        return parse_records(log_error, zfile.open(name))
+        if name == 'whatsapp_connections/groups.json':
+            if HIDDEN_FILE_RE.match(name):
+                continue
+            if not FILE_RE.match(name):
+                continue
+            data_groups = parse_records(log_error, zfile.open(name))
+        elif name == 'whatsapp_connections/contacts.json':
+            if HIDDEN_FILE_RE.match(name):
+                continue
+            if not FILE_RE.match(name):
+                continue
+            data_contacts = parse_records(log_error, zfile.open(name))
+    return data_groups, data_contacts
     log_error("No Json file is available")
 
 
@@ -80,10 +97,13 @@ def process(file_data):
     errors = []
     log_error = errors.append
     zfile = zipfile.ZipFile(file_data)
-    data = parse_zipfile(log_error, zfile)
+    data_groups, data_contacts = parse_zipfile(log_error, zfile)
 
-    if data is not None:
-        groups_no, contacts_no = extract_data(log_error, data)
+    if data_groups is not None:
+        groups_no = extract_groups(log_error, data_groups)
+
+    if data_contacts is not None:
+        contacts_no = extract_contacts(log_error, data_contacts)
 
     if errors:
         return [format_errors(errors)]
@@ -94,3 +114,7 @@ def process(file_data):
 
     return formatted_results
 
+
+if __name__ == "__main__":
+    x = process('My Account Info.zip')
+    print(x[0]["data_frame"])
