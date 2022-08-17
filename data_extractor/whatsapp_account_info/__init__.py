@@ -66,6 +66,26 @@ def extract_contacts(log_error, data):
     return contacts_no
 
 
+def extract_data(log_error, data):  # For supporting the old format
+    # data = pd.read_csv('whatsapp/df_chat.csv')
+    # return 1,1
+    groups_no = 0
+    contacts_no = 0
+    try:
+        groups_no = len(data[COLNAMES_DF.GROUPS])
+    except (TypeError, KeyError) as e:
+        print("No group is available")
+    try:
+        contacts_no = len(data[COLNAMES_DF.CONTACTS])
+    except (TypeError, KeyError) as e:
+        print("No contact is available")
+
+    if (groups_no == 0) and (contacts_no == 0):
+        log_error("Neither group nor contact is available")
+    return groups_no, contacts_no
+
+
+
 def parse_records(log_error, f):
     try:
         data = json.load(f)
@@ -93,20 +113,41 @@ def parse_zipfile(log_error, zfile):
     log_error("No Json file is available")
 
 
+def parse_zipfile_old_format(log_error, zfile):
+    for name in zfile.namelist():
+        if HIDDEN_FILE_RE.match(name):
+            continue
+        if not FILE_RE.match(name):
+            continue
+        return parse_records(log_error, zfile.open(name))
+    log_error("No Json file is available")
+
+
 def process(file_data):
     errors = []
     log_error = errors.append
     zfile = zipfile.ZipFile(file_data)
-    data_groups, data_contacts = parse_zipfile(log_error, zfile)
+    try:
+        data_groups, data_contacts = parse_zipfile(log_error, zfile)
 
-    if data_groups is not None:
-        groups_no = extract_groups(log_error, data_groups)
+        if data_groups is not None:
+            groups_no = extract_groups(log_error, data_groups)
 
-    if data_contacts is not None:
-        contacts_no = extract_contacts(log_error, data_contacts)
+        if data_contacts is not None:
+            contacts_no = extract_contacts(log_error, data_contacts)
 
-    if errors:
-        return [format_errors(errors)]
+        if errors:
+            return [format_errors(errors)]
+
+    except:  # Support old format of the account_info data package
+        COLNAMES_DF.GROUPS = 'groups'
+        COLNAMES_DF.CONTACTS = 'contacts'
+        data = parse_zipfile_old_format(log_error, zfile)
+        if data is not None:
+            groups_no, contacts_no = extract_data(log_error, data)
+
+        if errors:
+            return [format_errors(errors)]
 
     d = {'number_of_groups': [groups_no], 'number_of_contacts': [contacts_no]}
     df = pd.DataFrame(data=d)
@@ -116,5 +157,7 @@ def process(file_data):
 
 
 if __name__ == "__main__":
-    x = process('My Account Info.zip')
+    # x = process('My Account Info.zip')
+    # x = process('Mijn accountinformatie.zip')
+    x = process('account_info.zip')
     print(x[0]["data_frame"])
