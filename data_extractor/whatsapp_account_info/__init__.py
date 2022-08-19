@@ -2,8 +2,8 @@ __version__ = '0.2.0'
 
 import zipfile
 import re
-import pandas as pd
 import json
+import pandas as pd
 
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 FILE_RE = re.compile(r".*.json$")
@@ -21,24 +21,27 @@ COLNAMES_DF = ColnamesDf()
 
 
 def format_results(df):
+    """Function for formatting results to the Eyra's standard format"""
     results = []
     results.append(
         {
-        "id": "Whatsapp account info",
-        "title": "The account information file is read:",
-        "data_frame": df
+            "id": "Whatsapp account info",
+            "title": "The account information file is read:",
+            "data_frame": df
         }
     )
     return results
 
 
 def format_errors(errors):
+    """ Function for formatting logging messages as a dataframe """
     data_frame = pd.DataFrame()
     data_frame["Messages"] = pd.Series(errors, name="Messages")
     return {"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}
 
 
 def extract_groups(log_error, data):
+    """Function for extracting the number of groups"""
 
     groups_no = 0
     try:
@@ -53,6 +56,7 @@ def extract_groups(log_error, data):
 
 
 def extract_contacts(log_error, data):
+    """Function for extracting the number of contacts"""
 
     contacts_no = 0
 
@@ -66,9 +70,8 @@ def extract_contacts(log_error, data):
     return contacts_no
 
 
-def extract_data(log_error, data):  # For supporting the old format
-    # data = pd.read_csv('whatsapp/df_chat.csv')
-    # return 1,1
+def extract_data(log_error, data):
+    """Function to extract group_no and contact_no fields - Support for the old format"""
     groups_no = 0
     contacts_no = 0
     try:
@@ -85,8 +88,8 @@ def extract_data(log_error, data):  # For supporting the old format
     return groups_no, contacts_no
 
 
-
 def parse_records(log_error, f):
+    """Function for loading json files content"""
     try:
         data = json.load(f)
     except json.JSONDecodeError:
@@ -96,6 +99,7 @@ def parse_records(log_error, f):
 
 
 def parse_zipfile(log_error, zfile):
+    """Function for extracting input zipfile"""
     for name in zfile.namelist():
         if name == 'whatsapp_connections/groups.json':
             if HIDDEN_FILE_RE.match(name):
@@ -109,11 +113,12 @@ def parse_zipfile(log_error, zfile):
             if not FILE_RE.match(name):
                 continue
             data_contacts = parse_records(log_error, zfile.open(name))
+    # log_error("No Json file is available")
     return data_groups, data_contacts
-    log_error("No Json file is available")
 
 
 def parse_zipfile_old_format(log_error, zfile):
+    """Function for extracting input zipfile"""
     for name in zfile.namelist():
         if HIDDEN_FILE_RE.match(name):
             continue
@@ -124,6 +129,7 @@ def parse_zipfile_old_format(log_error, zfile):
 
 
 def process(file_data):
+    """Main function for extracting account information"""
     errors = []
     log_error = errors.append
     zfile = zipfile.ZipFile(file_data)
@@ -149,15 +155,9 @@ def process(file_data):
         if errors:
             return [format_errors(errors)]
 
-    d = {'number_of_groups': [groups_no], 'number_of_contacts': [contacts_no]}
-    df = pd.DataFrame(data=d)
-    formatted_results = format_results(df)
+    data_info = {'number_of_groups': [groups_no], 'number_of_contacts': [contacts_no]}
+    df_info = pd.DataFrame(data=data_info)
+    formatted_results = format_results(df_info)
 
     return formatted_results
 
-
-if __name__ == "__main__":
-    # x = process('My Account Info.zip')
-    # x = process('Mijn accountinformatie.zip')
-    x = process('account_info.zip')
-    print(x[0]["data_frame"])
