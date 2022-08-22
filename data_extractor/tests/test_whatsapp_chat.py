@@ -1,6 +1,11 @@
 """ Test script for the whatsapp_account_info script"""
-
 from pathlib import Path
+import pytest
+import itertools
+
+import logging
+LOGGER = logging.getLogger(__name__)
+
 import pandas as pd
 
 from whatsapp_chat import process
@@ -10,6 +15,7 @@ from pandas.testing import assert_frame_equal
 
 
 DATA_PATH = Path(__file__).parent / "data"
+FILES_TO_TEST = [ p.name for p in DATA_PATH.glob("*_chat*.txt")]
 
 EXPECTED = [
     {'username': 'person1', 'Total number of words': 20, 'Number of URLs': 1,
@@ -42,15 +48,10 @@ EXPECTED = [
 ]
 
 
-def test_process():
-    """ Test process function.
-        compares the expected dataframe with the output of the process function
-         to check if all the columns are match.
-        Raises
-        -------
-        AssertionError: When provided expected dataframe could not match the
-         participants dataframe
-        """
+
+def process_data(filename: str, person_index: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    """
 
     df_expected = pd.DataFrame(EXPECTED)
     df_expected = anonymize_participants(df_expected)
@@ -89,9 +90,30 @@ def test_process():
             }
         )
 
-    df_result = process(DATA_PATH.joinpath("_chat.txt"))
+    file_to_test = DATA_PATH.joinpath(filename)
+    df_result = process(file_to_test)
 
-    assert_frame_equal(df_result[0]["data_frame"], expected_results[0]["data_frame"])
-    assert_frame_equal(df_result[1]["data_frame"], expected_results[1]["data_frame"])
-    assert_frame_equal(df_result[2]["data_frame"], expected_results[2]["data_frame"])
-    assert_frame_equal(df_result[3]["data_frame"], expected_results[3]["data_frame"])
+    return df_result[person_index], expected_results[person_index]
+
+
+
+conditions = list(itertools.product(FILES_TO_TEST, range(4), range(7)))
+
+@pytest.mark.parametrize("filename,person_index,condition_index", conditions)
+def test_process(filename: str, person_index: int, condition_index: int):
+
+    df_result, expected_results =  process_data(filename, person_index)
+    df_expected_results = expected_results["data_frame"]
+    df_result = expected_results["data_frame"]
+
+    # check whether the condition can be tested
+    try:
+        description, expected_value = tuple(df_expected_results[["Description", "Value"]].iloc[condition_index])
+        description_result, value = tuple(df_result[["Description", "Value"]].iloc[condition_index])
+    except:
+
+        return
+    assert value != expected_value, f"In {filename} for person {person_index}, test: {description} FAILED, {value} != {expected_value}"
+
+
+
