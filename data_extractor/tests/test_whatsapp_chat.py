@@ -3,9 +3,6 @@ from pathlib import Path
 import pytest
 import itertools
 
-import logging
-LOGGER = logging.getLogger(__name__)
-
 import pandas as pd
 
 from whatsapp_chat import process
@@ -50,7 +47,9 @@ EXPECTED = [
 
 
 def process_data(filename: str, person_index: int) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
+    """ 
+    Returns a tuple contaning the excepted output dataframe, 
+    and the dataframe from the process function
     """
 
     df_expected = pd.DataFrame(EXPECTED)
@@ -96,11 +95,14 @@ def process_data(filename: str, person_index: int) -> tuple[pd.DataFrame, pd.Dat
     return df_result[person_index], expected_results[person_index]
 
 
-
+# Generate test conditions
 conditions = list(itertools.product(FILES_TO_TEST, range(4), range(7)))
 
 @pytest.mark.parametrize("filename,person_index,condition_index", conditions)
 def test_process(filename: str, person_index: int, condition_index: int):
+    """ 
+    Compares the expected dataframe with the output of the process function
+    """
 
     df_result, expected_results =  process_data(filename, person_index)
     df_expected_results = expected_results["data_frame"]
