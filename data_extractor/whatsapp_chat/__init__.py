@@ -433,11 +433,12 @@ def parse_chat(log_error, data):
         df = make_chat_df(log_error, data, hformat)
         if df is not None:
              return df
+    log_error("hformats did not match the provided text. We try to use a general regex to read the chat file. ")
     # If header format is unknown to our script we use a loose regular expression to detect
     df = make_df_general_regx(log_error,data)
     if df.shape[0] > 0:
         return df
-    log_error("hformats did not match the provided text. No match was found")
+    log_error("Failed to read the Chat file.")
     return None
 
 
