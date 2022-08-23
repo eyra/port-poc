@@ -2,7 +2,7 @@
 from pathlib import Path
 import pytest
 import itertools
-
+from typing import Tuple
 import pandas as pd
 
 from whatsapp_chat import process
@@ -46,7 +46,7 @@ EXPECTED = [
 
 
 
-def process_data(filename: str, person_index: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """ 
     Returns a tuple contaning the excepted output dataframe, 
     and the dataframe from the process function
@@ -115,7 +115,7 @@ def test_process(filename: str, person_index: int, condition_index: int):
     except:
 
         return
-    assert value != expected_value, f"In {filename} for person {person_index}, test: {description} FAILED, {value} != {expected_value}"
+    assert value == expected_value, f"In {filename} for person {person_index}, test: {description} FAILED, {value} != {expected_value}"
 
 
 
