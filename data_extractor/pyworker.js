@@ -10,13 +10,15 @@ loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.0/full/" }).then
 });
 
 let file = undefined
+var filename = undefined
 
 onmessage = (event) => {
   const { eventType } = event.data;
   if (eventType === "loadScript") {
     self.pyodide.runPython(event.data.script)
   } else if (eventType === "initData") {
-    file = self.pyodide.FS.open("user-data", "w")
+    filename = event.data.filename
+    file = self.pyodide.FS.open(filename, "w")
   } else if (eventType === "data") {
     self.pyodide.FS.write(file, event.data.chunk, 0, event.data.chunk.length)
   } else if (eventType === "processData") {
@@ -24,7 +26,15 @@ onmessage = (event) => {
     def _process_data():
       import json
       import html
-      result = process(open("user-data", "rb"))
+      import pandas as pd
+
+      result = process("${filename}")
+
+      if not result:
+        data_frame = pd.DataFrame()
+        data_frame["Messages"] = pd.Series(["Unfortunately, no data could be extracted from the selected file."], name="Messages")
+        result = [{"id": "important_feedback", "title": "Important feedback", "data_frame": data_frame}]
+
       data_output = []
       html_output = []
       for data in result:
@@ -32,6 +42,7 @@ onmessage = (event) => {
         df = data['data_frame']
         html_output.append(df.to_html(classes=["data-donation-extraction-results"], justify="left"))
         data_output.append({"id": data["id"], "data_frame": df.to_json()})
+
       return {
         "html": "\\n".join(html_output),
         "data": json.dumps(data_output),
