@@ -25,7 +25,7 @@ HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
 SYSTEM_MESSAGES = ['end-to-end','WhatsApp']
 hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:',
-            '[%d-%m-%y %H:%M:%S] %name:', '[%m/%d/%y, %H:%M:%S] %name:', '%d/%m/%y, %H:%M – %name:',
+            '[%d-%m-%y %H:%M:%S] %name:', '[%m/%d/%y, %H:%M:%S] %name:', '%d/%m/%y, %H:%M – %name:', '%d/%m/%y, %H:%M - %name:',
             '%d.%m.%y, %H:%M – %name:','[%d/%m/%y, %H:%M:%S %P] %name:','[%m/%d/%y, %H:%M:%S %P] %name:',
             '[%d.%m.%y, %H:%M:%S] %name:', '[%m/%d/%y %H:%M:%S] %name:', '[%m-%d-%y, %H:%M:%S] %name:',
             '[%m-%d-%y %H:%M:%S] %name:','%m-%d-%y %H:%M - %name:','%m-%d-%y, %H:%M - %name:',
@@ -33,7 +33,8 @@ hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y
             '%d.%m.%y %H:%M – %name:', '%m.%d.%y, %H:%M – %name:', '%m.%d.%y %H:%M – %name:',
             '[%d.%m.%y %H:%M:%S] %name:','[%m.%d.%y, %H:%M:%S] %name:', '[%m.%d.%y %H:%M:%S] %name:']
 
-
+–
+-
 class ColnamesDf:
     """Access class constants using variable ``utils.COLNAMES_DF``."""
 
