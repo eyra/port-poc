@@ -10,7 +10,6 @@ import pandas as pd
 import zipfile
 
 
-
 URL_PATTERN = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)" \
               r"(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|" \
               r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
@@ -25,16 +24,17 @@ HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
 SYSTEM_MESSAGES = ['end-to-end','WhatsApp']
 hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:',
-            '[%d-%m-%y %H:%M:%S] %name:', '[%m/%d/%y, %H:%M:%S] %name:', '%d/%m/%y, %H:%M – %name:', '%d/%m/%y, %H:%M - %name:',
-            '%d.%m.%y, %H:%M – %name:','[%d/%m/%y, %H:%M:%S %P] %name:','[%m/%d/%y, %H:%M:%S %P] %name:',
+            '[%d-%m-%y %H:%M:%S] %name:', '[%m/%d/%y, %H:%M:%S] %name:', '%d/%m/%y, %H:%M – %name:',
+            '%d/%m/%y, %H:%M - %name:', '%d.%m.%y, %H:%M – %name:', '%d.%m.%y, %H:%M - %name:',
+            '[%d/%m/%y, %H:%M:%S %P] %name:', '[%m/%d/%y, %H:%M:%S %P] %name:',
             '[%d.%m.%y, %H:%M:%S] %name:', '[%m/%d/%y %H:%M:%S] %name:', '[%m-%d-%y, %H:%M:%S] %name:',
-            '[%m-%d-%y %H:%M:%S] %name:','%m-%d-%y %H:%M - %name:','%m-%d-%y, %H:%M - %name:',
-            '%m-%d-%y, %H:%M , %name:', '%m/%d/%y, %H:%M , %name:','%d-%m-%y, %H:%M , %name:','%d/%m/%y, %H:%M , %name:',
-            '%d.%m.%y %H:%M – %name:', '%m.%d.%y, %H:%M – %name:', '%m.%d.%y %H:%M – %name:',
-            '[%d.%m.%y %H:%M:%S] %name:','[%m.%d.%y, %H:%M:%S] %name:', '[%m.%d.%y %H:%M:%S] %name:']
+            '[%m-%d-%y %H:%M:%S] %name:', '%m-%d-%y %H:%M - %name:', '%m-%d-%y, %H:%M - %name:',
+            '%m-%d-%y, %H:%M , %name:', '%m/%d/%y, %H:%M , %name:', '%d-%m-%y, %H:%M , %name:',
+            '%d/%m/%y, %H:%M , %name:', '%d.%m.%y %H:%M – %name:', '%m.%d.%y, %H:%M – %name:',
+            '%m.%d.%y %H:%M – %name:', '[%d.%m.%y %H:%M:%S] %name:', '[%m.%d.%y, %H:%M:%S] %name:',
+            '[%m.%d.%y %H:%M:%S] %name:']
 
-–
--
+
 class ColnamesDf:
     """Access class constants using variable ``utils.COLNAMES_DF``."""
 
