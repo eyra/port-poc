@@ -48,6 +48,7 @@ function process() {
   resultElement().style.display = "none";
 
   const file = fileInput().files[0];
+  const filename = file.name
   const reader = file.stream().getReader();
   const sendToWorker = ({ done, value }) => {
     if (done) {
@@ -60,7 +61,7 @@ function process() {
     reader.read().then(sendToWorker);
   };
   console.log("process: send event: initData");
-  pyWorker.postMessage({ eventType: "initData", size: file.size });
+  pyWorker.postMessage({ eventType: "initData", filename: filename, size: file.size });
   reader.read().then(sendToWorker);
 }
 
