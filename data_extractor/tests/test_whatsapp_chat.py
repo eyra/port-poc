@@ -45,7 +45,6 @@ EXPECTED = [
 ]
 
 
-
 def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """ 
     Returns a tuple contaning the excepted output dataframe, 
@@ -90,13 +89,14 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
         )
 
     file_to_test = DATA_PATH.joinpath(filename)
-    df_result = process(file_to_test)
+    df_result = process(str(file_to_test))
 
     return df_result[person_index], expected_results[person_index]
 
 
 # Generate test conditions
 conditions = list(itertools.product(FILES_TO_TEST, range(4), range(7)))
+
 
 @pytest.mark.parametrize("filename,person_index,condition_index", conditions)
 def test_process(filename: str, person_index: int, condition_index: int):
