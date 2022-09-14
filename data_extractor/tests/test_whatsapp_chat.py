@@ -8,8 +8,6 @@ import pandas as pd
 from whatsapp_chat import process
 from whatsapp_chat import anonymize_participants
 
-from pandas.testing import assert_frame_equal
-
 
 DATA_PATH = Path(__file__).parent / "data"
 FILES_TO_TEST = [ p.name for p in DATA_PATH.glob("*_chat*.txt")]
