@@ -90,7 +90,7 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
         )
 
     file_to_test = DATA_PATH.joinpath(filename)
-    df_result = process(file_to_test)
+    df_result = process(str(file_to_test))
 
     return df_result[person_index], expected_results[person_index]
 
