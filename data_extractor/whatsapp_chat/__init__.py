@@ -11,6 +11,7 @@ import zipfile
 import numpy as np
 
 
+
 URL_PATTERN = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)" \
               r"(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|" \
               r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
@@ -328,6 +329,67 @@ def parse_text(text, regex):
 
     return df_chat
 
+def make_df_general_regx(log_error,text):
+    """Use a general regex to load chat as a DataFrame.
+        Parameters
+        ----------
+        log_error : list
+            List of error messages
+        text : str
+            Text of the chat
+
+        Returns
+        -------
+        pandas.DataFrame
+            pandas.DataFrame with messages sent by users
+
+        """
+
+    expr_to_test = re.compile(r"^(.*?)(?:\] | - )(.*?): (.*?$)", flags=re.DOTALL)
+    lines = text.split("\n")
+    result = []
+    line_counts = len(lines)
+    for l in lines:
+        try:
+
+            res = expr_to_test.match(l)
+
+            timestamp = res.group(1)
+            username = res.group(2)
+            message = res.group(3)
+
+            # clean timestamp
+            timestamp = timestamp.replace('[','').replace(',','')
+            timestamp = timestamp.strip('\u202c')
+            timestamp = timestamp.strip('\u200e')
+
+            timestamp = pd.to_datetime(timestamp)
+
+
+            line_dict = {
+                COLNAMES_DF.DATE: timestamp,
+                COLNAMES_DF.USERNAME: username,
+                COLNAMES_DF.MESSAGE: message
+            }
+
+            result.append(line_dict)
+
+        except:
+            pass
+
+    df_chat = pd.DataFrame.from_records(result)
+    df_chat = df_chat[[COLNAMES_DF.DATE, COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
+
+    # clean username
+    df_chat[COLNAMES_DF.USERNAME] = df_chat[COLNAMES_DF.USERNAME].apply(lambda u: u.strip('\u202c'))
+
+    # log unprocessed_line_no= the number of lines in multiline messages + the number of system messages
+    unprocessed_line_no = line_counts - df_chat.shape[0]
+
+    if unprocessed_line_no > 0:
+        log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
+
+    return df_chat
 
 def make_df_general_regx(log_error,text):
     """Use a general regex to load chat as a DataFrame.
@@ -800,8 +862,7 @@ def parse_chat_file(log_error, chat_file_name):
         zfile = zipfile.ZipFile(chat_file_name)
 
     except:
-        print(chat_file_name)
-        print(type(chat_file_name))
+
         if FILE_RE.match(chat_file_name):
             tfile = open(chat_file_name, encoding="utf8")
             chat = parse_chat(log_error, tfile.read())

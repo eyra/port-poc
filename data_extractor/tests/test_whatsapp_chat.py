@@ -42,7 +42,6 @@ EXPECTED = [
      'Who replies to you the most often?': 'person1'}
 ]
 
-
 def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """ 
     Returns a tuple contaning the excepted output dataframe, 
@@ -94,7 +93,6 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
 
 # Generate test conditions
 conditions = list(itertools.product(FILES_TO_TEST, range(4), range(7)))
-
 
 @pytest.mark.parametrize("filename,person_index,condition_index", conditions)
 def test_process(filename: str, person_index: int, condition_index: int):
