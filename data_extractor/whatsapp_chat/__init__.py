@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 import pandas as pd
 import zipfile
+import numpy as np
 
 
 URL_PATTERN = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)" \
@@ -26,6 +27,7 @@ SYSTEM_MESSAGES = ['end-to-end','WhatsApp']
 hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:',
             '[%d-%m-%y %H:%M:%S] %name:', '[%m/%d/%y, %H:%M:%S] %name:', '%d/%m/%y, %H:%M – %name:',
             '%d/%m/%y, %H:%M - %name:', '%d.%m.%y, %H:%M – %name:', '%d.%m.%y, %H:%M - %name:',
+            '%m.%d.%y, %H:%M - %name:', '%m.%d.%y %H:%M - %name:',
             '[%d/%m/%y, %H:%M:%S %P] %name:', '[%m/%d/%y, %H:%M:%S %P] %name:',
             '[%d.%m.%y, %H:%M:%S] %name:', '[%m/%d/%y %H:%M:%S] %name:', '[%m-%d-%y, %H:%M:%S] %name:',
             '[%m-%d-%y %H:%M:%S] %name:', '%m-%d-%y %H:%M - %name:', '%m-%d-%y, %H:%M - %name:',
@@ -36,7 +38,7 @@ hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y
 
 
 class ColnamesDf:
-    """Access class constants using variable ``utils.COLNAMES_DF``."""
+    """Access class constants using variable ``COLNAMES_DF``."""
 
     DATE = 'date'
     """Date column"""
@@ -91,6 +93,15 @@ class ColnamesDf:
 
 
 COLNAMES_DF = ColnamesDf()
+
+class Dutch_Const:
+    """Access class constants using variable ``DUTCH_CONST``."""
+
+    YOU = 'u'
+    """Refer to the data donor in dutch"""
+
+
+DUTCH_CONST = Dutch_Const()
 
 # *** parsing functions ***
 regex_simplifier = {
@@ -317,6 +328,7 @@ def parse_text(text, regex):
 
     return df_chat
 
+
 def make_df_general_regx(log_error,text):
     """Use a general regex to load chat as a DataFrame.
         Parameters
@@ -507,11 +519,15 @@ def input_df(data_path):
     """
     errors = []
     log_error = errors.append
+    username = 'person1'
     fp = os.path.join(data_path, "whatsapp_chat.zip")
-    zfile = zipfile.ZipFile(fp)
-    chat = parse_zipfile(log_error, zfile)
-    participants = extract_participants_features(chat, anonymize=False)
-    return chat, participants
+    chat_df = parse_chat_file(log_error,str(fp))
+    if chat_df is not None:
+        chat_df = remove_system_messages(log_error, chat_df)
+        participants_df = get_participants_features(chat_df)
+        results = extract_results(participants_df, username, anonymize=False)
+        return chat_df, results
+
 
 # *** analysis functions ***
 
@@ -555,7 +571,7 @@ def get_response_matrix(df_chat):
 #     return str.encode('WhatsAppProject@2022')
 
 
-def anonymize_participants(df_participants):
+def anonymize_participants(df_participants, donor_user_name):
     """Anonymize text data.
     Anonymize USERNAME, REPLY_2USER, and USER_REPLY2 columns of the given DataFrame.
     Parameters
@@ -578,6 +594,15 @@ def anonymize_participants(df_participants):
         pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
     df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
         'person' + df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].astype(str)
+
+    # replace donor_user_name with word 'you'
+    fact_index_bool = (stacked.factorize()[1] == donor_user_name)
+    you_index = np.where(fact_index_bool)[0][0]
+    you_username = 'person' + str(you_index)
+
+    df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
+        df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].replace(you_username, DUTCH_CONST.YOU)
+
     return df_participants
 
 
@@ -606,6 +631,10 @@ def get_wide_to_long_participant(df):
                       var_name=COLNAMES_DF.DESCRIPTION, value_name=COLNAMES_DF.VALUE)
 
     usernames = sorted(set(df_melt[COLNAMES_DF.USERNAME]))
+
+    # bring donator username to the top of the list
+    usernames.insert(0,usernames.pop(usernames.index(DUTCH_CONST.YOU)))
+
     for u in usernames:
         df_user = df_melt[(df_melt[COLNAMES_DF.USERNAME] == u) &
                           df_melt[COLNAMES_DF.VALUE] != 0]
@@ -688,12 +717,15 @@ def remove_system_messages(log_error, chat):
 
     return chat
 
-def extract_participants_features(chat, anonymize=True):
+
+def extract_results(participants_df, donor_user_name, anonymize=True):
     """Parse the given zip file.
     Parameters
     ----------
-    chat : pandas.DataFrame
-        A DataFrame that includes chat data
+    participants_df : pandas.DataFrame
+        A DataFrame that includes participants data
+    donor_user_name : str
+
     anonymize : bool
         Indicates if usernames should be anonymized
     Returns
@@ -701,12 +733,10 @@ def extract_participants_features(chat, anonymize=True):
     list
         A list of DataFrames which include participant features
     """
-
-    df = get_participants_features(chat)
     if anonymize:
-        df= anonymize_participants(df)
+        participants_df= anonymize_participants(participants_df, donor_user_name)
 
-    results = get_wide_to_long_participant(df)
+    results = get_wide_to_long_participant(participants_df)
     return results
 
 # ***** end of analysis functions *****
@@ -733,7 +763,7 @@ def format_results(df_list, error):
         )
     if len(error)>0:
         results = results+error
-    return results
+    return {"cmd": "result", "result": results}
 
 
 def format_errors(errors):
@@ -752,42 +782,108 @@ def format_errors(errors):
     return [{"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}]
 
 
-def process(file_data):
-    """Convert whatsapp chat file to participant dataframes.
-    This is the main function which extracts the participants
-    information from the row chat file provided by data-donators.
+def parse_chat_file(log_error, chat_file_name):
+    """Read whatsapp chat file and return chat data in the format of a dataframe.
     Parameters
     ----------
-    file_data : str
+    chat_file_name : str
         The path of the chat file. It can be in zip or txt format.
+    log_error : list
+       List of error messages.
     Returns
     -------
     pandas.dataframe
         Extracted data from the chat file
     """
-    errors = []
-    log_error = errors.append
 
     try:
-        zfile = zipfile.ZipFile(file_data)
+        zfile = zipfile.ZipFile(chat_file_name)
+
     except:
-        if FILE_RE.match(file_data):
-            tfile = open(file_data, encoding="utf8")
+        print(chat_file_name)
+        print(type(chat_file_name))
+        if FILE_RE.match(chat_file_name):
+            tfile = open(chat_file_name, encoding="utf8")
             chat = parse_chat(log_error, tfile.read())
 
         else:
-            log_error("There is not a valid file format.")
-            return format_errors(errors)
+            log_error("There is not a valid input file format.")
+            return None
     else:
         chat = parse_zipfile(log_error, zfile)
 
-    if chat is not None:
-        chat = remove_system_messages(log_error,chat)
-        participants = extract_participants_features(chat)
+    return chat
 
-        formatted_results = format_results(participants, format_errors(errors))
+
+def process():
+    """Convert whatsapp chat file to participant dataframes.
+       This is the main function which extracts the participants
+       information from the row chat file provided by data-donors.
+       Parameters
+       ----------
+       chat_file_name : str
+           The path of the chat file. It can be in zip or txt format.
+       Returns
+       -------
+       pandas.dataframe
+           Extracted data from the chat file
+       """
+    errors = []
+    log_error = errors.append
+
+    chat_file_name = yield prompt_file()
+    chat_df = parse_chat_file(log_error, chat_file_name)
+    if chat_df is not None:
+        chat_df = remove_system_messages(log_error, chat_df)
+        participants_df = get_participants_features(chat_df)
+        usernames = extract_usernames(participants_df)
+        username = yield prompt_radio(usernames)
+        results = extract_results(participants_df, username)
+        yield format_results(results, format_errors(errors))
 
     else:
         return format_errors(errors)
 
-    return formatted_results
+
+def prompt_file():
+    return {
+        "cmd": "prompt",
+        "prompt": {
+            "type": "file",
+            "file": {
+                "title": {
+                    "en": "Step 1: Select the chat file",
+                    "nl": "Stap 1: Selecteer het chat file"
+                },
+                "description": {
+                    "en": "We previously asked you to export a chat file from Whatsapp. Please select this file so we can extract relevant information for our research.",
+                    "nl": "We hebben je gevraagd een chat bestand te exporteren uit Whatsapp. Je kan deze file nu selecteren zodat wij er relevante informatie uit kunnen halen voor ons onderzoek."
+                },
+                "extensions": "application/zip, text/plain",
+            }
+        }
+    }
+
+
+def prompt_radio(usernames):
+    return {
+        "cmd": "prompt",
+        "prompt": {
+            "type": "radio",
+            "radio": {
+                "title": {
+                    "en": "Step 2: Select your username",
+                    "nl": "Stap 2: Selecteer je gebruikersnaam"
+                },
+                "description": {
+                    "en": "The following users are extracted from the chat file. Which one are you?",
+                    "nl": "De volgende gebruikers hebben we uit de chat file gehaald. Welke ben jij?"
+                },
+                "items": usernames,
+            }
+        }
+    }
+
+
+def extract_usernames(chat_df):
+    return chat_df[[COLNAMES_DF.USERNAME]]
