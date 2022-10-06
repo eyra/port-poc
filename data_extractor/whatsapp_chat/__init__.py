@@ -11,7 +11,6 @@ import zipfile
 import numpy as np
 
 
-
 URL_PATTERN = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)" \
               r"(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|" \
               r"(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
@@ -94,6 +93,7 @@ class ColnamesDf:
 
 
 COLNAMES_DF = ColnamesDf()
+
 
 class Dutch_Const:
     """Access class constants using variable ``DUTCH_CONST``."""
@@ -322,12 +322,13 @@ def parse_text(text, regex):
         return None
 
     df_chat = pd.DataFrame.from_records(result)
-    df_chat = df_chat[[COLNAMES_DF.DATE,COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
+    df_chat = df_chat[[COLNAMES_DF.DATE, COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
 
     # clean username
     df_chat[COLNAMES_DF.USERNAME] = df_chat[COLNAMES_DF.USERNAME].apply(lambda u: u.strip('\u202c'))
 
     return df_chat
+
 
 def make_df_general_regx(log_error,text):
     """Use a general regex to load chat as a DataFrame.
@@ -359,12 +360,11 @@ def make_df_general_regx(log_error,text):
             message = res.group(3)
 
             # clean timestamp
-            timestamp = timestamp.replace('[','').replace(',','')
+            timestamp = timestamp.replace('[', '').replace(',','')
             timestamp = timestamp.strip('\u202c')
             timestamp = timestamp.strip('\u200e')
 
             timestamp = pd.to_datetime(timestamp)
-
 
             line_dict = {
                 COLNAMES_DF.DATE: timestamp,
@@ -390,6 +390,7 @@ def make_df_general_regx(log_error,text):
         log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
 
     return df_chat
+
 
 def make_df_general_regx(log_error,text):
     """Use a general regex to load chat as a DataFrame.
@@ -421,12 +422,11 @@ def make_df_general_regx(log_error,text):
             message = res.group(3)
 
             # clean timestamp
-            timestamp = timestamp.replace('[','').replace(',','')
+            timestamp = timestamp.replace('[', '').replace(',', '')
             timestamp = timestamp.strip('\u202c')
             timestamp = timestamp.strip('\u200e')
 
             timestamp = pd.to_datetime(timestamp)
-
 
             line_dict = {
                 COLNAMES_DF.DATE: timestamp,
@@ -452,6 +452,7 @@ def make_df_general_regx(log_error,text):
         log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
 
     return df_chat
+
 
 def make_chat_df(log_error, text, hformat):
     """Load chat as a DataFrame.
@@ -719,8 +720,10 @@ def get_participants_features(df_chat):
     """
     # Calculate first message date
     df_chat[COLNAMES_DF.FirstMessage] = df_chat[COLNAMES_DF.DATE].astype('datetime64[ns]')
+    df_chat[COLNAMES_DF.FirstMessage] = df_chat[COLNAMES_DF.FirstMessage].dt.floor('Min')
     # Calculate last message date
     df_chat[COLNAMES_DF.LastMessage] = df_chat[COLNAMES_DF.DATE].astype('datetime64[ns]')
+    df_chat[COLNAMES_DF.LastMessage] = df_chat[COLNAMES_DF.LastMessage].dt.floor('Min')
     # Calculate the number of words in messages
     df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
     # number of ulrs
@@ -757,6 +760,7 @@ def get_participants_features(df_chat):
     df_participants = pd.merge(df_participants, response_matrix, how="left", on=COLNAMES_DF.USERNAME, validate="1:1")
 
     return df_participants
+
 
 def remove_system_messages(log_error, chat):
     """Removes system messages from chat
@@ -823,7 +827,7 @@ def format_results(df_list, error):
                 "data_frame": df[[COLNAMES_DF.DESCRIPTION,COLNAMES_DF.VALUE]].reset_index(drop=True)
             }
         )
-    if len(error)>0:
+    if len(error) > 0:
         results = results+error
     return {"cmd": "result", "result": results}
 
