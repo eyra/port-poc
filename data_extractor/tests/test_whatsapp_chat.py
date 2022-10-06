@@ -1,0 +1,140 @@
+""" Test script for the whatsapp_account_info script"""
+from pathlib import Path
+import pytest
+import itertools
+from typing import Tuple
+import pandas as pd
+
+from whatsapp_chat import process
+from whatsapp_chat import anonymize_participants
+from pandas.testing import assert_frame_equal
+
+
+class Dutch_Const:
+    """Access class constants using variable ``DUTCH_CONST``."""
+
+    YOU = 'u'
+    """Refer to the data donor in dutch"""
+
+
+DUTCH_CONST = Dutch_Const()
+
+DATA_PATH = Path(__file__).parent / "data"
+FILES_TO_TEST = [p.name for p in DATA_PATH.glob("*_chat*.txt")]
+
+EXPECTED = [
+    {'username': 'person1', 'Total number of words': 20, 'Number of URLs': 1,
+     'Number of shared locations': 1, 'file_no': 0, 'Number of messages': 3,
+     'Date first message': pd.to_datetime('2022-03-16 15:20:00'),
+     'Date last message': pd.to_datetime('2022-03-24 20:19:00'),
+     'Who do you most often reply to?': 'person2',
+     'Who replies to you the most often?': 'person2'},
+
+    {'username': 'person2', 'Total number of words': 7, 'Number of URLs': 1,
+     'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 3,
+     'Date first message': pd.to_datetime('2022-03-16 15:25:00'),
+     'Date last message': pd.to_datetime('2022-03-26 18:52:00'),
+     'Who do you most often reply to?': 'person1',
+     'Who replies to you the most often?': 'person1'},
+
+    {'username': 'person3', 'Total number of words': 1, 'Number of URLs': 0,
+     'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 1,
+     'Date first message': pd.to_datetime('2022-03-16 15:26:00'),
+     'Date last message': pd.to_datetime('2022-03-16 15:26:00'),
+     'Who do you most often reply to?': 'person2',
+     'Who replies to you the most often?': 'person2'},
+
+    {'username': 'person4', 'Total number of words': 21, 'Number of URLs': 0,
+     'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 2,
+     'Date first message': pd.to_datetime('2020-07-14 22:05:00'),
+     'Date last message': pd.to_datetime('2022-03-20 20:08:00'),
+     'Who do you most often reply to?': 'person1',
+     'Who replies to you the most often?': 'person1'}
+]
+
+
+def process_data(filename: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """ 
+    Returns a tuple contaning the excepted output dataframe, 
+    and the dataframe from the process function
+    """
+
+    donor_user_name = "person2"
+
+    df_expected = pd.DataFrame(EXPECTED)
+    df_expected = anonymize_participants(df_expected, donor_user_name)
+    df_expected['Number of messages'] = df_expected['Number of messages'].astype('int64')
+    df_expected['Number of URLs'] = df_expected['Number of URLs'].astype('int32')
+    df_expected['Number of shared locations'] = \
+        df_expected['Number of shared locations'].astype('int32')
+    df_expected['file_no'] = df_expected['file_no'].astype('int32')
+
+    results = []
+    df_melt = pd.melt(df_expected, id_vars=["username"],
+                      value_vars=["Total number of words",
+                                  "Number of messages",
+                                  "Date first message",
+                                  "Date last message",
+                                  "Number of URLs",
+                                  "file_no",
+                                  "Number of shared locations",
+                                  "Who replies to you the most often?",
+                                  "Who do you most often reply to?"],
+                      var_name='Description', value_name='Value')
+
+    usernames = sorted(set(df_melt["username"]))
+
+    # bring donator username to the top of the list
+    usernames.insert(0, usernames.pop(usernames.index(DUTCH_CONST.YOU)))
+
+    for user in usernames:
+        df_user = df_melt[(df_melt["username"] == user) & df_melt["Value"] != 0]
+        results.append(df_user)
+
+    expected_results = []
+    for df_chat in results:
+        user_name = pd.unique(df_chat["username"])[0]
+        expected_results.append(
+            {
+                "id": user_name,  # "overview",
+                "title": user_name,  # "The following data is extracted from the file:",
+                "data_frame": df_chat[["Description", "Value"]].reset_index(drop=True)
+            }
+        )
+
+    # file_to_test = DATA_PATH.joinpath(filename)
+    # df_result = process(str(file_to_test))
+    flow = process()
+    # start flow and handle first prompt
+    file_prompt = flow.send(None)
+    assert file_prompt["cmd"] == 'prompt'
+    assert file_prompt["prompt"]["type"] == 'file'
+
+    selected_filename = DATA_PATH.joinpath(filename)
+    radio_prompt = flow.send(str(selected_filename))
+    assert radio_prompt["cmd"] == 'prompt'
+    assert radio_prompt["prompt"]["type"] == 'radio'
+
+    result = flow.send(donor_user_name)
+    df_result = result["result"][0]["data_frame"]
+
+    df_expected = expected_results[0]["data_frame"]
+
+    return df_result, df_expected
+
+
+# Generate test conditions
+conditions = list(itertools.product(FILES_TO_TEST, range(1)))
+
+
+@pytest.mark.parametrize("filename, condition_index", conditions)
+def test_process(filename: str, condition_index: int):
+    """ 
+    Compares the expected dataframe with the output of the process function
+    """
+
+    df_result, df_expected_results = process_data(filename)
+    assert_frame_equal(df_result, df_expected_results)
+
+
+
