@@ -114,10 +114,6 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
 
     result = flow.send(donor_user_name)
 
-    # print(result["result"][person_index]["data_frame"])
-    # print('#########')
-    # print(expected_results[person_index]["data_frame"])
-
     return result["result"][person_index], expected_results[person_index]
 
 
