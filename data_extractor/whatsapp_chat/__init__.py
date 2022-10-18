@@ -94,6 +94,7 @@ class ColnamesDf:
 
 COLNAMES_DF = ColnamesDf()
 
+
 class Dutch_Const:
     """Access class constants using variable ``DUTCH_CONST``."""
 
@@ -325,7 +326,7 @@ def parse_text(text, regex):
         return None
 
     df_chat = pd.DataFrame.from_records(result)
-    df_chat = df_chat[[COLNAMES_DF.DATE,COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
+    df_chat = df_chat[[COLNAMES_DF.DATE, COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
 
     # clean username
     df_chat[COLNAMES_DF.USERNAME] = df_chat[COLNAMES_DF.USERNAME].apply(lambda u: u.strip('\u202c'))
@@ -363,12 +364,73 @@ def make_df_general_regx(log_error,text):
             message = res.group(3)
 
             # clean timestamp
-            timestamp = timestamp.replace('[','').replace(',','')
+            timestamp = timestamp.replace('[', '').replace(',','')
             timestamp = timestamp.strip('\u202c')
             timestamp = timestamp.strip('\u200e')
 
             timestamp = pd.to_datetime(timestamp)
 
+            line_dict = {
+                COLNAMES_DF.DATE: timestamp,
+                COLNAMES_DF.USERNAME: username,
+                COLNAMES_DF.MESSAGE: message
+            }
+
+            result.append(line_dict)
+
+        except:
+            pass
+
+    df_chat = pd.DataFrame.from_records(result)
+    df_chat = df_chat[[COLNAMES_DF.DATE, COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
+
+    # clean username
+    df_chat[COLNAMES_DF.USERNAME] = df_chat[COLNAMES_DF.USERNAME].apply(lambda u: u.strip('\u202c'))
+
+    # log unprocessed_line_no= the number of lines in multiline messages + the number of system messages
+    unprocessed_line_no = line_counts - df_chat.shape[0]
+
+    if unprocessed_line_no > 0:
+        log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
+
+    return df_chat
+
+
+def make_df_general_regx(log_error,text):
+    """Use a general regex to load chat as a DataFrame.
+        Parameters
+        ----------
+        log_error : list
+            List of error messages
+        text : str
+            Text of the chat
+
+        Returns
+        -------
+        pandas.DataFrame
+            pandas.DataFrame with messages sent by users
+
+        """
+
+    expr_to_test = re.compile(r"^(.*?)(?:\] | - )(.*?): (.*?$)", flags=re.DOTALL)
+    lines = text.split("\n")
+    result = []
+    line_counts = len(lines)
+    for l in lines:
+        try:
+
+            res = expr_to_test.match(l)
+
+            timestamp = res.group(1)
+            username = res.group(2)
+            message = res.group(3)
+
+            # clean timestamp
+            timestamp = timestamp.replace('[', '').replace(',', '')
+            timestamp = timestamp.strip('\u202c')
+            timestamp = timestamp.strip('\u200e')
+
+            timestamp = pd.to_datetime(timestamp)
 
             line_dict = {
                 COLNAMES_DF.DATE: timestamp,
@@ -395,6 +457,7 @@ def make_df_general_regx(log_error,text):
         log_error(DUTCH_CONST.PRE_MESSAGE+ "Number of unprocessed lines: "+ str(unprocessed_line_no)+ DUTCH_CONST.POST_MESSAGE)
 
     return df_chat
+
 
 def make_chat_df(log_error, text, hformat):
     """Load chat as a DataFrame.
@@ -662,8 +725,10 @@ def get_participants_features(df_chat):
     """
     # Calculate first message date
     df_chat[COLNAMES_DF.FirstMessage] = df_chat[COLNAMES_DF.DATE].astype('datetime64[ns]')
+    df_chat[COLNAMES_DF.FirstMessage] = df_chat[COLNAMES_DF.FirstMessage].dt.floor('Min')
     # Calculate last message date
     df_chat[COLNAMES_DF.LastMessage] = df_chat[COLNAMES_DF.DATE].astype('datetime64[ns]')
+    df_chat[COLNAMES_DF.LastMessage] = df_chat[COLNAMES_DF.LastMessage].dt.floor('Min')
     # Calculate the number of words in messages
     df_chat[COLNAMES_DF.WORDS_NO] = df_chat['message'].apply(lambda x: len(x.split()))
     # number of ulrs
@@ -700,6 +765,7 @@ def get_participants_features(df_chat):
     df_participants = pd.merge(df_participants, response_matrix, how="left", on=COLNAMES_DF.USERNAME, validate="1:1")
 
     return df_participants
+
 
 def remove_system_messages(log_error, chat):
     """Removes system messages from chat
@@ -766,7 +832,7 @@ def format_results(df_list, error):
                 "data_frame": df[[COLNAMES_DF.DESCRIPTION,COLNAMES_DF.VALUE]].reset_index(drop=True)
             }
         )
-    if len(error)>0:
+    if len(error) > 0:
         results = results+error
     return {"cmd": "result", "result": results}
 
@@ -805,8 +871,7 @@ def parse_chat_file(log_error, chat_file_name):
         zfile = zipfile.ZipFile(chat_file_name)
 
     except:
-        print(chat_file_name)
-        print(type(chat_file_name))
+
         if FILE_RE.match(chat_file_name):
             tfile = open(chat_file_name, encoding="utf8")
             chat = parse_chat(log_error, tfile.read())

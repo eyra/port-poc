@@ -8,12 +8,24 @@ import pandas as pd
 from whatsapp_chat import process
 from whatsapp_chat import anonymize_participants
 
+from pandas.testing import assert_frame_equal
+
 
 DATA_PATH = Path(__file__).parent / "data"
 FILES_TO_TEST = [ p.name for p in DATA_PATH.glob("*_chat*.txt")]
 
+class Dutch_Const:
+    """Access class constants using variable ``DUTCH_CONST``."""
+
+    YOU = 'u'
+    """Refer to the data donor in dutch"""
+
+
+DUTCH_CONST = Dutch_Const()
+
+
 EXPECTED = [
-    {'username': 'person1', 'Total number of words': 20, 'Number of URLs': 1,
+    {'username': 'person1', 'Total number of words': 21, 'Number of URLs': 1,
      'Number of shared locations': 1, 'file_no': 0, 'Number of messages': 3,
      'Date first message': pd.to_datetime('2022-03-16 15:20:25'),
      'Date last message': pd.to_datetime('2022-03-24 20:19:38'),
@@ -34,7 +46,7 @@ EXPECTED = [
      'Who do you most often reply to?': 'person2',
      'Who replies to you the most often?': 'person2'},
 
-    {'username': 'person4', 'Total number of words': 21, 'Number of URLs': 0,
+    {'username': 'person4', 'Total number of words': 22, 'Number of URLs': 0,
      'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 2,
      'Date first message': pd.to_datetime('2020-07-14 22:05:54'),
      'Date last message': pd.to_datetime('2022-03-20 20:08:51'),
@@ -44,13 +56,14 @@ EXPECTED = [
 
 
 def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """ 
-    Returns a tuple contaning the excepted output dataframe, 
+    """
+    Returns a tuple contaning the excepted output dataframe,
     and the dataframe from the process function
     """
+    donor_user_name = "person2"
 
     df_expected = pd.DataFrame(EXPECTED)
-    df_expected = anonymize_participants(df_expected)
+    df_expected = anonymize_participants(df_expected, donor_user_name)
     df_expected['Number of messages'] = df_expected['Number of messages'].astype('int64')
     df_expected['Number of URLs'] = df_expected['Number of URLs'].astype('int32')
     df_expected['Number of shared locations'] = \
@@ -70,7 +83,9 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
                                   "Who do you most often reply to?"],
                       var_name='Description', value_name='Value')
 
-    usernames = df_melt["username"].unique()
+    usernames = sorted(set(df_melt["username"]))
+    usernames.insert(0, usernames.pop(usernames.index(DUTCH_CONST.YOU)))
+
     for user in usernames:
         df_user = df_melt[(df_melt["username"] == user) & df_melt["Value"] != 0]
         results.append(df_user)
@@ -87,9 +102,19 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
         )
 
     file_to_test = DATA_PATH.joinpath(filename)
-    df_result = process(str(file_to_test))
+    flow = process()
+    # start flow and handle first prompt
+    file_prompt = flow.send(None)
+    assert file_prompt["cmd"] == 'prompt'
+    assert file_prompt["prompt"]["type"] == 'file'
 
-    return df_result[person_index], expected_results[person_index]
+    radio_prompt = flow.send(str(file_to_test))
+    assert radio_prompt["cmd"] == 'prompt'
+    assert radio_prompt["prompt"]["type"] == 'radio'
+
+    result = flow.send(donor_user_name)
+
+    return result["result"][person_index], expected_results[person_index]
 
 
 # Generate test conditions
@@ -98,13 +123,14 @@ conditions = list(itertools.product(FILES_TO_TEST, range(4), range(7)))
 
 @pytest.mark.parametrize("filename,person_index,condition_index", conditions)
 def test_process(filename: str, person_index: int, condition_index: int):
-    """ 
+    """
     Compares the expected dataframe with the output of the process function
     """
 
-    df_result, expected_results =  process_data(filename, person_index)
+    df_result, expected_results = process_data(filename, person_index)
     df_expected_results = expected_results["data_frame"]
     df_result = expected_results["data_frame"]
+
 
     # check whether the condition can be tested
     try:
@@ -114,6 +140,3 @@ def test_process(filename: str, person_index: int, condition_index: int):
 
         return
     assert value == expected_value, f"In {filename} for person {person_index}, test: {description} FAILED, {value} != {expected_value}"
-
-
-
