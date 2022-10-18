@@ -143,7 +143,7 @@ def generate_regex(log_error, hformat):
         try:
             hformat = hformat.replace(i, regex_simplifier[i])
         except KeyError:
-            log_error(f"Could find regular expression for : {i}")
+            log_error(DUTCH_CONST.PRE_MESSAGE+f"Could find regular expression for : {i}"+DUTCH_CONST.POST_MESSAGE)
 
     hformat = hformat + ' '
     hformat_x = hformat.split('(?P<username>[^:]*)')[0]
@@ -391,7 +391,7 @@ def make_df_general_regx(log_error,text):
     unprocessed_line_no = line_counts - df_chat.shape[0]
 
     if unprocessed_line_no > 0:
-        log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
+        log_error(DUTCH_CONST.PRE_MESSAGE+"Number of unprocessed lines: " + str(unprocessed_line_no)+DUTCH_CONST.POST_MESSAGE)
 
     return df_chat
 
@@ -453,7 +453,6 @@ def make_df_general_regx(log_error,text):
     unprocessed_line_no = line_counts - df_chat.shape[0]
 
     if unprocessed_line_no > 0:
-        #log_error("Number of unprocessed lines: "+ str(unprocessed_line_no))
         log_error(DUTCH_CONST.PRE_MESSAGE+ "Number of unprocessed lines: "+ str(unprocessed_line_no)+ DUTCH_CONST.POST_MESSAGE)
 
     return df_chat
