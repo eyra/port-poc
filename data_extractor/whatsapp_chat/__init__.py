@@ -49,34 +49,34 @@ class ColnamesDf:
     MESSAGE = 'message'
     """Message column"""
 
-    MESSAGE_LENGTH = 'message_length'
+    MESSAGE_LENGTH = 'Lengte bericht'
     """Message length column"""
 
-    FirstMessage = 'Date first message'
+    FirstMessage = 'Datum eerste bericht'
     """Date of first message column"""
 
-    LastMessage = 'Date last message'
+    LastMessage = 'Datum laatste bericht'
     """Date of last message column"""
 
-    MESSAGE_NO = 'Number of messages'
+    MESSAGE_NO = 'Aantal berichten'
     """Number of Message  column"""
 
-    WORDS_NO = 'Total number of words'
+    WORDS_NO = 'Aantal woorden'
     """Total number of words  column"""
 
-    REPLY_2USER = 'Who replies to you the most often?'
+    REPLY_2USER = 'Wie reageert het meest op u?'
     """Who replies to the user the most column"""
 
-    USER_REPLY2 = 'Who do you most often reply to?'
+    USER_REPLY2 = 'Op wie reageert u het meest?'
     """User replies to who the most column"""
 
-    URL_NO = 'Number of URLs'
+    URL_NO = 'Aantal websites'
     """Number of URLs column"""
 
-    LOCATION_NO = 'Number of shared locations'
+    LOCATION_NO = 'Aantal locaties'
     """Number of locations column"""
 
-    FILE_NO = 'Number of shared files'
+    FILE_NO = 'Aantal foto’s en bestanden'
     """Number of files column"""
 
     EMOJI_NO = 'emoji_no'
@@ -85,10 +85,10 @@ class ColnamesDf:
     EMOJI_Fav = 'emoji_fav'
     """Favorite emojies column"""
 
-    DESCRIPTION = 'Description'
+    DESCRIPTION = 'Omschrijving'
     """Variable column in melted dataframe"""
 
-    VALUE = 'Value'
+    VALUE = 'Gegevens'
     """Value column in melted dataframe"""
 
 
@@ -99,6 +99,10 @@ class Dutch_Const:
 
     YOU = 'u'
     """Refer to the data donor in dutch"""
+    PRE_MESSAGE = 'Wij ontvingen de volgende waarschuwing: '
+    
+    POST_MESSAGE = 'Dit is voor ons nog steeds waardevolle informatie en u kunt dit resultaat ook doneren.'
+
 
 
 DUTCH_CONST = Dutch_Const()
@@ -387,7 +391,8 @@ def make_df_general_regx(log_error,text):
     unprocessed_line_no = line_counts - df_chat.shape[0]
 
     if unprocessed_line_no > 0:
-        log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
+        #log_error("Number of unprocessed lines: "+ str(unprocessed_line_no))
+        log_error(DUTCH_CONST.PRE_MESSAGE+ "Number of unprocessed lines: "+ str(unprocessed_line_no)+ DUTCH_CONST.POST_MESSAGE)
 
     return df_chat
 
@@ -420,7 +425,7 @@ def make_chat_df(log_error, text, hformat):
         df = add_schema(df)
 
         if alerts_no>0:
-            log_error("Number of unprocessed system messages: "+str(alerts_no))
+            log_error(DUTCH_CONST.PRE_MESSAGE+"Number of unprocessed system messages: "+str(alerts_no)+DUTCH_CONST.POST_MESSAGE)
 
         return df
     except:
@@ -446,12 +451,12 @@ def parse_chat(log_error, data):
         df = make_chat_df(log_error, data, hformat)
         if df is not None:
              return df
-    log_error("hformats did not match the provided text. We try to use a general regex to read the chat file. ")
+    log_error(DUTCH_CONST.PRE_MESSAGE+"hformats did not match the provided text. We try to use a general regex to read the chat file. " +DUTCH_CONST.POST_MESSAGE)
     # If header format is unknown to our script we use a loose regular expression to detect
     df = make_df_general_regx(log_error,data)
     if df.shape[0] > 0:
         return df
-    log_error("Failed to read the Chat file.")
+    log_error(DUTCH_CONST.PRE_MESSAGE+"Failed to read the Chat file."+DUTCH_CONST.POST_MESSAGE)
     return None
 
 
@@ -473,7 +478,7 @@ def decode_chat(log_error, f, filename):
     try:
         data = f.decode("utf-8")
     except:
-        log_error(f"Could not decode to utf-8: {filename}")
+        log_error(DUTCH_CONST.PRE_MESSAGE+f"Could not decode to utf-8: {filename}"+DUTCH_CONST.POST_MESSAGE)
     else:
         return parse_chat(log_error, data)
 
@@ -499,7 +504,7 @@ def parse_zipfile(log_error, zfile):
         chat = decode_chat(log_error,zfile.read(name),name)
 
     if chat is None:
-        log_error("No valid chat file is available")
+        log_error(DUTCH_CONST.PRE_MESSAGE+"No valid chat file is available"+DUTCH_CONST.POST_MESSAGE)
 
     return chat
 
@@ -519,7 +524,7 @@ def input_df(data_path):
     """
     errors = []
     log_error = errors.append
-    username = 'person1'
+    username = 'Deelnemer 1'
     fp = os.path.join(data_path, "whatsapp_chat.zip")
     chat_df = parse_chat_file(log_error,str(fp))
     if chat_df is not None:
@@ -593,12 +598,12 @@ def anonymize_participants(df_participants, donor_user_name):
     df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
         pd.Series(stacked.factorize()[0], index=stacked.index).unstack()
     df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
-        'person' + df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].astype(str)
+        'Deelnemer ' + df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].astype(str)
 
     # replace donor_user_name with word 'you'
     fact_index_bool = (stacked.factorize()[1] == donor_user_name)
     you_index = np.where(fact_index_bool)[0][0]
-    you_username = 'person' + str(you_index)
+    you_username = 'Deelnemer ' + str(you_index)
 
     df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]] = \
         df_participants[[COLNAMES_DF.USERNAME,COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]].replace(you_username, DUTCH_CONST.YOU)
@@ -807,7 +812,7 @@ def parse_chat_file(log_error, chat_file_name):
             chat = parse_chat(log_error, tfile.read())
 
         else:
-            log_error("There is not a valid input file format.")
+            log_error(DUTCH_CONST.PRE_MESSAGE+"There is not a valid input file format."+DUTCH_CONST.POST_MESSAGE)
             return None
     else:
         chat = parse_zipfile(log_error, zfile)
@@ -857,7 +862,7 @@ def prompt_file():
                 },
                 "description": {
                     "en": "We previously asked you to export a chat file from Whatsapp. Please select this file so we can extract relevant information for our research.",
-                    "nl": "We hebben je gevraagd een chat bestand te exporteren uit Whatsapp. Je kan deze file nu selecteren zodat wij er relevante informatie uit kunnen halen voor ons onderzoek."
+                    "nl": "We hebben u gevraagd een chat bestand te exporteren uit Whatsapp. U kunt dit bestand nu selecteren zodat wij er relevante informatie uit kunnen halen voor ons onderzoek."
                 },
                 "extensions": "application/zip, text/plain",
             }
@@ -877,7 +882,7 @@ def prompt_radio(usernames):
                 },
                 "description": {
                     "en": "The following users are extracted from the chat file. Which one are you?",
-                    "nl": "De volgende gebruikers hebben we uit de chat file gehaald. Welke ben jij?"
+                    "nl": "Geef hieronder aan welke gebruikersnaam van u is. Deze data wordt niet opgeslagen, maar alleen gebruikt om de juiste informatie uit uw data te kunnen halen."
                 },
                 "items": usernames,
             }
