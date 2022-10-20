@@ -25,33 +25,33 @@ DUTCH_CONST = Dutch_Const()
 
 
 EXPECTED = [
-    {'username': 'person1', 'Total number of words': 21, 'Number of URLs': 1,
-     'Number of shared locations': 1, 'file_no': 0, 'Number of messages': 3,
-     'Date first message': pd.to_datetime('2022-03-16 15:20:25'),
-     'Date last message': pd.to_datetime('2022-03-24 20:19:38'),
-     'Who do you most often reply to?': 'person2',
-     'Who replies to you the most often?': 'person2'},
+    {'username': 'person1', 'Aantal woorden': 21, 'Aantal websites': 1,
+     'Aantal locaties': 1, 'Aantal foto’s en bestanden': 0, 'Aantal berichten': 3,
+     'Datum eerste bericht': pd.to_datetime('2022-03-16 15:20:25'),
+     'Datum laatste bericht': pd.to_datetime('2022-03-24 20:19:38'),
+     'Op wie reageert u het meest?': 'person2',
+     'Wie reageert het meest op u?': 'person2'},
 
-    {'username': 'person2', 'Total number of words': 7, 'Number of URLs': 1,
-     'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 3,
-     'Date first message': pd.to_datetime('2022-03-16 15:25:38'),
-     'Date last message': pd.to_datetime('2022-03-26 18:52:15'),
-     'Who do you most often reply to?': 'person1',
-     'Who replies to you the most often?': 'person1'},
+    {'username': 'person2', 'Aantal woorden': 7, 'Aantal websites': 1,
+     'Aantal locaties': 0, 'Aantal foto’s en bestanden': 0, 'Aantal berichten': 3,
+     'Datum eerste bericht': pd.to_datetime('2022-03-16 15:25:38'),
+     'Datum laatste bericht': pd.to_datetime('2022-03-26 18:52:15'),
+     'Op wie reageert u het meest?': 'person1',
+     'Wie reageert het meest op u?': 'person1'},
 
-    {'username': 'person3', 'Total number of words': 1, 'Number of URLs': 0,
-     'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 1,
-     'Date first message': pd.to_datetime('2022-03-16 15:26:48'),
-     'Date last message': pd.to_datetime('2022-03-16 15:26:48'),
-     'Who do you most often reply to?': 'person2',
-     'Who replies to you the most often?': 'person2'},
+    {'username': 'person3', 'Aantal woorden': 1, 'Aantal websites': 0,
+     'Aantal locaties': 0, 'Aantal foto’s en bestanden': 0, 'Aantal berichten': 1,
+     'Datum eerste bericht': pd.to_datetime('2022-03-16 15:26:48'),
+     'Datum laatste bericht': pd.to_datetime('2022-03-16 15:26:48'),
+     'Op wie reageert u het meest?': 'person2',
+     'Wie reageert het meest op u?': 'person2'},
 
-    {'username': 'person4', 'Total number of words': 22, 'Number of URLs': 0,
-     'Number of shared locations': 0, 'file_no': 0, 'Number of messages': 2,
-     'Date first message': pd.to_datetime('2020-07-14 22:05:54'),
-     'Date last message': pd.to_datetime('2022-03-20 20:08:51'),
-     'Who do you most often reply to?': 'person1',
-     'Who replies to you the most often?': 'person1'}
+    {'username': 'person4', 'Aantal woorden': 22, 'Aantal websites': 0,
+     'Aantal locaties': 0, 'Aantal foto’s en bestanden': 0, 'Aantal berichten': 2,
+     'Datum eerste bericht': pd.to_datetime('2020-07-14 22:05:54'),
+     'Datum laatste bericht': pd.to_datetime('2022-03-20 20:08:51'),
+     'Op wie reageert u het meest?': 'person1',
+     'Wie reageert het meest op u?': 'person1'}
 ]
 
 
@@ -64,23 +64,23 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
 
     df_expected = pd.DataFrame(EXPECTED)
     df_expected = anonymize_participants(df_expected, donor_user_name)
-    df_expected['Number of messages'] = df_expected['Number of messages'].astype('int64')
-    df_expected['Number of URLs'] = df_expected['Number of URLs'].astype('int32')
-    df_expected['Number of shared locations'] = \
-        df_expected['Number of shared locations'].astype('int32')
-    df_expected['file_no'] = df_expected['file_no'].astype('int32')
+    df_expected['Aantal berichten'] = df_expected['Aantal berichten'].astype('int64')
+    df_expected['Aantal websites'] = df_expected['Aantal websites'].astype('int32')
+    df_expected['Aantal locaties'] = \
+        df_expected['Aantal locaties'].astype('int32')
+    df_expected['Aantal foto’s en bestanden'] = df_expected['Aantal foto’s en bestanden'].astype('int32')
 
     results = []
     df_melt = pd.melt(df_expected, id_vars=["username"],
-                      value_vars=["Total number of words",
-                                  "Number of messages",
-                                  "Date first message",
-                                  "Date last message",
-                                  "Number of URLs",
-                                  "file_no",
-                                  "Number of shared locations",
-                                  "Who replies to you the most often?",
-                                  "Who do you most often reply to?"],
+                      value_vars=["Aantal woorden",
+                                  "Aantal berichten",
+                                  "Datum eerste bericht",
+                                  "Datum laatste bericht",
+                                  "Aantal websites",
+                                  "Aantal foto’s en bestanden",
+                                  "Aantal locaties",
+                                  "Op wie reageert u het meest?",
+                                  "Wie reageert het meest op u?"],
                       var_name='Description', value_name='Value')
 
     usernames = sorted(set(df_melt["username"]))
