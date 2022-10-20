@@ -1,27 +1,16 @@
 """ Test script for the whatsapp_account_info script"""
 from pathlib import Path
-import pytest
-import itertools
 from typing import Tuple
+import itertools
+
+import pytest
 import pandas as pd
 
 from whatsapp_chat import process
 from whatsapp_chat import anonymize_participants
 
-from pandas.testing import assert_frame_equal
-
-
 DATA_PATH = Path(__file__).parent / "data"
-FILES_TO_TEST = [ p.name for p in DATA_PATH.glob("*_chat*.txt")]
-
-class Dutch_Const:
-    """Access class constants using variable ``DUTCH_CONST``."""
-
-    YOU = 'u'
-    """Refer to the data donor in dutch"""
-
-
-DUTCH_CONST = Dutch_Const()
+FILES_TO_TEST = [p.name for p in DATA_PATH.glob("*_chat*.txt")]
 
 
 EXPECTED = [
@@ -68,7 +57,8 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
     df_expected['Aantal websites'] = df_expected['Aantal websites'].astype('int32')
     df_expected['Aantal locaties'] = \
         df_expected['Aantal locaties'].astype('int32')
-    df_expected['Aantal foto’s en bestanden'] = df_expected['Aantal foto’s en bestanden'].astype('int32')
+    df_expected['Aantal foto’s en bestanden'] = \
+        df_expected['Aantal foto’s en bestanden'].astype('int32')
 
     results = []
     df_melt = pd.melt(df_expected, id_vars=["username"],
@@ -84,7 +74,7 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
                       var_name='Description', value_name='Value')
 
     usernames = sorted(set(df_melt["username"]))
-    usernames.insert(0, usernames.pop(usernames.index(DUTCH_CONST.YOU)))
+    usernames.insert(0, usernames.pop(usernames.index('u')))
 
     for user in usernames:
         df_user = df_melt[(df_melt["username"] == user) & df_melt["Value"] != 0]
@@ -131,12 +121,14 @@ def test_process(filename: str, person_index: int, condition_index: int):
     df_expected_results = expected_results["data_frame"]
     df_result = expected_results["data_frame"]
 
-
     # check whether the condition can be tested
     try:
-        description, expected_value = tuple(df_expected_results[["Description", "Value"]].iloc[condition_index])
-        description_result, value = tuple(df_result[["Description", "Value"]].iloc[condition_index])
-    except:
+        description, expected_value =\
+            tuple(df_expected_results[["Description", "Value"]].iloc[condition_index])
+        description_result, value = tuple(df_result[["Description", "Value"]].iloc[condition_index]) # pylint: disable=w0612
+
+    except: # pylint: disable=w0702
 
         return
-    assert value == expected_value, f"In {filename} for person {person_index}, test: {description} FAILED, {value} != {expected_value}"
+    assert value == expected_value, f"In {filename} for person {person_index}," \
+                                    f" test: {description} FAILED, {value} != {expected_value}"
