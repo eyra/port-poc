@@ -1,3 +1,4 @@
+"""Parse account_info"""
 __version__ = '0.2.0'
 
 import zipfile
@@ -9,7 +10,8 @@ HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 FILE_RE = re.compile(r".*.json$")
 
 
-class ColnamesDf:
+class ColnamesDf:  # pylint: disable=R0903
+    """Class to define column names"""
     GROUPS = 'wa_groups'
     """Groups column"""
 
@@ -20,14 +22,14 @@ class ColnamesDf:
 COLNAMES_DF = ColnamesDf()
 
 
-def format_results(df):
+def format_results(dataframe):
     """Function for formatting results to the Eyra's standard format"""
     results = []
     results.append(
         {
             "id": "Whatsapp account info",
             "title": "The account information file is read:",
-            "data_frame": df
+            "data_frame": dataframe
         }
     )
     return results
@@ -46,7 +48,7 @@ def extract_groups(log_error, data):
     groups_no = 0
     try:
         groups_no = len(data[COLNAMES_DF.GROUPS])
-    except (TypeError, KeyError) as e:
+    except (TypeError, KeyError):
         print("No group is available")
 
     if groups_no == 0:
@@ -62,7 +64,7 @@ def extract_contacts(log_error, data):
 
     try:
         contacts_no = len(data[COLNAMES_DF.CONTACTS])
-    except (TypeError, KeyError) as e:
+    except (TypeError, KeyError):
         print("No contact is available")
 
     if contacts_no == 0:
@@ -76,11 +78,11 @@ def extract_data(log_error, data):
     contacts_no = 0
     try:
         groups_no = len(data[COLNAMES_DF.GROUPS])
-    except (TypeError, KeyError) as e:
+    except (TypeError, KeyError):
         print("No group is available")
     try:
         contacts_no = len(data[COLNAMES_DF.CONTACTS])
-    except (TypeError, KeyError) as e:
+    except (TypeError, KeyError):
         print("No contact is available")
 
     if (groups_no == 0) and (contacts_no == 0):
@@ -88,12 +90,12 @@ def extract_data(log_error, data):
     return groups_no, contacts_no
 
 
-def parse_records(log_error, f):
+def parse_records(log_error, file):  # pylint: disable=R1710
     """Function for loading json files content"""
     try:
-        data = json.load(f)
+        data = json.load(file)
     except json.JSONDecodeError:
-        log_error(f"Could not parse: {f.name}")
+        log_error(f"Could not parse: {file.name}")
     else:
         return data
 
@@ -132,7 +134,7 @@ def process(file_data):
     """Main function for extracting account information"""
     errors = []
     log_error = errors.append
-    zfile = zipfile.ZipFile(file_data)
+    zfile = zipfile.ZipFile(file_data)  # pylint: disable=R1732
     try:
         data_groups, data_contacts = parse_zipfile(log_error, zfile)
 
@@ -144,10 +146,10 @@ def process(file_data):
 
         if errors:
             return [format_errors(errors)]
-
-    except:  # Support old format of the account_info data package
-        COLNAMES_DF.GROUPS = 'groups'
-        COLNAMES_DF.CONTACTS = 'contacts'
+    # Support old format of the account_info data package
+    except:  # pylint: disable= W0702
+        COLNAMES_DF.GROUPS = 'groups'  # pylint: disable=C0103
+        COLNAMES_DF.CONTACTS = 'contacts'  # pylint: disable=C0103
         data = parse_zipfile_old_format(log_error, zfile)
         if data is not None:
             groups_no, contacts_no = extract_data(log_error, data)
@@ -160,4 +162,3 @@ def process(file_data):
     formatted_results = format_results(df_info)
 
     return formatted_results
-
