@@ -1,3 +1,4 @@
+# pylint: disable=R0801
 """Parse account_info"""
 __version__ = '0.2.0'
 
