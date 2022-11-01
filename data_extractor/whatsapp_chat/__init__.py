@@ -144,8 +144,7 @@ def generate_regex(log_error, hformat):
         try:
             hformat = hformat.replace(i, regex_simplifier[i])
         except KeyError:
-            log_error(DUTCH_CONST.PRE_MESSAGE+f"Could find regular expression for : {i}"+
-                      DUTCH_CONST.POST_MESSAGE)
+            log_error(f"Could find regular expression for : {i}")
 
     hformat = hformat + ' '
     hformat_x = hformat.split('(?P<username>[^:]*)')[0]
@@ -395,8 +394,7 @@ def make_df_general_regx(log_error,text):
     unprocessed_line_no = line_counts - df_chat.shape[0]
 
     if unprocessed_line_no > 0:
-        log_error(DUTCH_CONST.PRE_MESSAGE+ "Number of unprocessed lines: "+
-                  str(unprocessed_line_no)+ DUTCH_CONST.POST_MESSAGE)
+        log_error("Number of unprocessed lines: " + str(unprocessed_line_no))
 
     return df_chat
 
@@ -430,8 +428,7 @@ def make_chat_df(log_error, text, hformat):
         df_chat = add_schema(df_chat)
 
         if alerts_no>0:
-            log_error(DUTCH_CONST.PRE_MESSAGE+"Number of unprocessed system messages: "+
-                      str(alerts_no)+DUTCH_CONST.POST_MESSAGE)
+            log_error("Number of unprocessed system messages: " + str(alerts_no))
 
         return df_chat
     except:  # pylint: disable=W0702
@@ -457,15 +454,13 @@ def parse_chat(log_error, data):
         df_chat = make_chat_df(log_error, data, hformat)
         if df_chat is not None:
             return df_chat
-    log_error(DUTCH_CONST.PRE_MESSAGE +
-              "hformats did not match the provided text. We try to use a general regex"
-              " to read the chat file. " +
-              DUTCH_CONST.POST_MESSAGE)
+    log_error("hformats did not match the provided text. We try to use a general regex"
+              " to read the chat file. " )
     # If header format is unknown to our script we use a loose regular expression to detect
     df_chat = make_df_general_regx(log_error,data)
     if df_chat.shape[0] > 0:
         return df_chat
-    log_error(DUTCH_CONST.PRE_MESSAGE+"Failed to read the Chat file."+DUTCH_CONST.POST_MESSAGE)
+    log_error("Failed to read the Chat file.")
     return None
 
 
@@ -487,8 +482,7 @@ def decode_chat(log_error, file_chat, filename):
     try:
         data = file_chat.decode("utf-8")
     except:  # pylint: disable=W0702
-        log_error(DUTCH_CONST.PRE_MESSAGE+f"Could not decode to utf-8: {filename}" +
-                  DUTCH_CONST.POST_MESSAGE)
+        log_error(f"Could not decode to utf-8: {filename}")
         return None
     else:
         return parse_chat(log_error, data)
@@ -515,8 +509,7 @@ def parse_zipfile(log_error, zfile):
         chat = decode_chat(log_error,zfile.read(name),name)
 
     if chat is None:
-        log_error(DUTCH_CONST.PRE_MESSAGE+"No valid chat file is available" +
-                  DUTCH_CONST.POST_MESSAGE)
+        log_error("No valid chat file is available" )
 
     return chat
 
@@ -827,8 +820,8 @@ def format_errors(errors):
     if len(errors) == 0:
         return []
     data_frame = pd.DataFrame()
-    data_frame["Messages"] = pd.Series(errors, name="Messages")
-    return [{"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}]
+    data_frame["Omschrijving"] = pd.Series(errors, name="Omschrijving")
+    return [{"id": "extraction_log", "title": DUTCH_CONST.PRE_MESSAGE, "data_frame": data_frame}]
 
 
 def parse_chat_file(log_error, chat_file_name):
@@ -857,8 +850,7 @@ def parse_chat_file(log_error, chat_file_name):
             # chat = parse_chat(log_error, tfile.read())
 
         else:
-            log_error(DUTCH_CONST.PRE_MESSAGE+"There is not a valid input file format."+
-                      DUTCH_CONST.POST_MESSAGE)
+            log_error("There is not a valid input file format.")
             return None
     else:
         chat = parse_zipfile(log_error, zfile)
