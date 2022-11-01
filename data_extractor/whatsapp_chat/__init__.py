@@ -7,6 +7,7 @@ import os
 import re
 from datetime import datetime
 import zipfile
+from zipfile import BadZipFile
 import pandas as pd
 import numpy as np
 
@@ -24,7 +25,7 @@ FILE_RE = re.compile(r".*.txt$")
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 
 
-SYSTEM_MESSAGES = ['end-to-end','WhatsApp']
+SYSTEM_MESSAGES = ['end-to-end', 'WhatsApp']
 hformats = ['%m/%d/%y, %H:%M - %name:', '[%d/%m/%y, %H:%M:%S] %name:', '%d-%m-%y %H:%M - %name:',
             '[%d-%m-%y %H:%M:%S] %name:', '[%m/%d/%y, %H:%M:%S] %name:', '%d/%m/%y, %H:%M – %name:',
             '%d/%m/%y, %H:%M - %name:', '%d.%m.%y, %H:%M – %name:', '%d.%m.%y, %H:%M - %name:',
@@ -236,7 +237,7 @@ def remove_alerts_from_df(r_x, df_chat):
     df_new = df_chat.copy()
     df_new.loc[:, COLNAMES_DF.MESSAGE] = df_new[COLNAMES_DF.MESSAGE].apply(
         lambda x: remove_alerts_from_line(r_x, x))
-    return df_new,alerts_no
+    return df_new, alerts_no
 
 
 def remove_alerts_from_line(r_x, line_df):
@@ -336,7 +337,7 @@ def parse_text(text, regex):
     return df_chat
 
 
-def make_df_general_regx(log_error,text):
+def make_df_general_regx(log_error, text):
     """Use a general regex to load chat as a DataFrame.
         Parameters
         ----------
@@ -379,8 +380,9 @@ def make_df_general_regx(log_error,text):
             }
 
             result.append(line_dict)
-        except:  # pylint: disable=W0702
-            pass
+        except AttributeError:
+            log_error("Failed to read the Chat file.")
+            return None  # pass
 
     df_chat = pd.DataFrame.from_records(result)
     df_chat = df_chat[[COLNAMES_DF.DATE, COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
@@ -419,7 +421,7 @@ def make_chat_df(log_error, text, hformat):
     hformat = hformat.replace('[', r'\[').replace(']', r'\]')
 
     # Generate regex for given hformat
-    reg, r_x = generate_regex(log_error,hformat=hformat)
+    reg, r_x = generate_regex(log_error, hformat=hformat)
 
     # Parse chat to DataFrame
     try:
@@ -427,11 +429,11 @@ def make_chat_df(log_error, text, hformat):
         df_chat, alerts_no = remove_alerts_from_df(r_x, df_chat)
         df_chat = add_schema(df_chat)
 
-        if alerts_no>0:
+        if alerts_no > 0:
             log_error("Number of unprocessed system messages: " + str(alerts_no))
 
         return df_chat
-    except:  # pylint: disable=W0702
+    except KeyError:
         print(f"hformat : {hformat} is not match with the given text")
         return None
 
@@ -455,13 +457,14 @@ def parse_chat(log_error, data):
         if df_chat is not None:
             return df_chat
     log_error("hformats did not match the provided text. We try to use a general regex"
-              " to read the chat file. " )
+              " to read the chat file. ")
     # If header format is unknown to our script we use a loose regular expression to detect
-    df_chat = make_df_general_regx(log_error,data)
-    if df_chat.shape[0] > 0:
-        return df_chat
-    log_error("Failed to read the Chat file.")
-    return None
+    df_chat = make_df_general_regx(log_error, data)
+    # if df_chat.shape[0] > 0:
+    #     return df_chat
+    # log_error("Failed to read the Chat file.")
+    # return None
+    return df_chat
 
 
 def decode_chat(log_error, file_chat, filename):
@@ -481,7 +484,7 @@ def decode_chat(log_error, file_chat, filename):
     """
     try:
         data = file_chat.decode("utf-8")
-    except:  # pylint: disable=W0702
+    except UnicodeEncodeError:
         log_error(f"Could not decode to utf-8: {filename}")
         return None
     else:
@@ -506,10 +509,10 @@ def parse_zipfile(log_error, zfile):
             continue
         if not FILE_RE.match(name):
             continue
-        chat = decode_chat(log_error,zfile.read(name),name)
+        chat = decode_chat(log_error, zfile.read(name), name)
 
     if chat is None:
-        log_error("No valid chat file is available" )
+        log_error("No valid chat file is available")
 
     return chat
 
@@ -531,7 +534,7 @@ def input_df(data_path):
     log_error = errors.append
     username = 'Deelnemer 1'
     fp_chat = os.path.join(data_path, "whatsapp_chat.zip")
-    chat_df = parse_chat_file(log_error,str(fp_chat))
+    chat_df = parse_chat_file(log_error, str(fp_chat))
     if chat_df is not None:
         chat_df = remove_system_messages(chat_df)
         participants_df = get_participants_features(chat_df)
@@ -667,7 +670,7 @@ def get_wide_to_long_participant(df_participants):
     usernames = sorted(set(df_melt[COLNAMES_DF.USERNAME]))
 
     # bring donator username to the top of the list
-    usernames.insert(0,usernames.pop(usernames.index(DUTCH_CONST.YOU)))
+    usernames.insert(0, usernames.pop(usernames.index(DUTCH_CONST.YOU)))
 
     for user_name in usernames:
         df_user = df_melt[(df_melt[COLNAMES_DF.USERNAME] == user_name) &
@@ -727,7 +730,7 @@ def get_participants_features(df_chat):
     response_matrix[COLNAMES_DF.USER_REPLY2] = user_reply2
     response_matrix[COLNAMES_DF.REPLY_2USER] = reply2_user
     response_matrix.index.name = COLNAMES_DF.USERNAME
-    response_matrix = response_matrix.loc[:,[COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]]
+    response_matrix = response_matrix.loc[:, [COLNAMES_DF.USER_REPLY2, COLNAMES_DF.REPLY_2USER]]
     response_matrix = response_matrix.reset_index()
 
     df_participants = pd.merge(df_participants, response_matrix, how="left",
@@ -749,12 +752,10 @@ def remove_system_messages(chat):
     """
 
     message0 = chat.loc[0, COLNAMES_DF.MESSAGE]
-    #is_system_message = True if all(s in message0 for s in SYSTEM_MESSAGES) else False
     is_system_message = bool(all(s in message0 for s in SYSTEM_MESSAGES))
     if is_system_message:
         group_name = chat.loc[0, COLNAMES_DF.USERNAME]
-        #log_error("Identified group name:"+group_name)
-        chat = chat.loc[chat[COLNAMES_DF.USERNAME] != group_name,]
+        chat = chat.loc[chat[COLNAMES_DF.USERNAME] != group_name, ]
 
     return chat
 
@@ -775,7 +776,7 @@ def extract_results(participants_df, donor_user_name, anonymize=True):
         A list of DataFrames which include participant features
     """
     if anonymize:
-        participants_df= anonymize_participants(participants_df, donor_user_name)
+        participants_df = anonymize_participants(participants_df, donor_user_name)
 
     results = get_wide_to_long_participant(participants_df)
     return results
@@ -799,7 +800,7 @@ def format_results(df_list, error):
             {
                 "id": user_name,
                 "title": user_name,
-                "data_frame": df_item[[COLNAMES_DF.DESCRIPTION,COLNAMES_DF.VALUE]].reset_index(
+                "data_frame": df_item[[COLNAMES_DF.DESCRIPTION, COLNAMES_DF.VALUE]].reset_index(
                     drop=True)
             }
         )
@@ -841,13 +842,11 @@ def parse_chat_file(log_error, chat_file_name):
     try:
         zfile = zipfile.ZipFile(chat_file_name)  # pylint: disable=R1732
 
-    except:  # pylint: disable=W0702
+    except BadZipFile:
 
         if FILE_RE.match(chat_file_name):
             with open(chat_file_name, encoding="utf8") as tfile:
                 chat = parse_chat(log_error, tfile.read())
-            # tfile = open(chat_file_name, encoding="utf8")
-            # chat = parse_chat(log_error, tfile.read())
 
         else:
             log_error("There is not a valid input file format.")
