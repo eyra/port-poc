@@ -7,6 +7,7 @@ import re
 import json
 import pandas as pd
 
+
 HIDDEN_FILE_RE = re.compile(r".*__MACOSX*")
 FILE_RE = re.compile(r".*.json$")
 
@@ -19,8 +20,31 @@ class ColnamesDf:  # pylint: disable=R0903
     CONTACTS = 'wa_contacts'
     """Contacts column"""
 
+    GROUPS_OLD = 'groups'
+    """Groups column"""
+
+    CONTACTS_OLD = 'contacts'
+    """Contacts column"""
+
+    GROUPS_OUTPUT = 'Aantal groepen'
+    """Groups column"""
+
+    CONTACTS_OUTPUT = 'Aantal contacten'
+    """Contacts column"""
+
 
 COLNAMES_DF = ColnamesDf()
+
+
+class DutchConst:  # pylint: disable=R0903
+    """Access class constants using variable ``DUTCH_CONST``."""
+
+    LOG_TITLE = 'Wij ontvingen de volgende waarschuwing: '
+    OUTPUT_TITLE = "Het account informatie bestand bestaat uit:"
+    DESCRIPTION = "Omschrijving"
+
+
+DUTCH_CONST = DutchConst()
 
 
 def format_results(dataframe):
@@ -29,7 +53,7 @@ def format_results(dataframe):
     results.append(
         {
             "id": "Whatsapp account info",
-            "title": "The account information file is read:",
+            "title": DUTCH_CONST.OUTPUT_TITLE,
             "data_frame": dataframe
         }
     )
@@ -39,8 +63,8 @@ def format_results(dataframe):
 def format_errors(errors):
     """ Function for formatting logging messages as a dataframe """
     data_frame = pd.DataFrame()
-    data_frame["Messages"] = pd.Series(errors, name="Messages")
-    return {"id": "extraction_log", "title": "Extraction log", "data_frame": data_frame}
+    data_frame[DUTCH_CONST.DESCRIPTION] = pd.Series(errors, name=DUTCH_CONST.DESCRIPTION)
+    return {"id": "extraction_log", "title": DUTCH_CONST.LOG_TITLE, "data_frame": data_frame}
 
 
 def extract_groups(log_error, data):
@@ -78,11 +102,11 @@ def extract_data(log_error, data):
     groups_no = 0
     contacts_no = 0
     try:
-        groups_no = len(data[COLNAMES_DF.GROUPS])
+        groups_no = len(data[COLNAMES_DF.GROUPS_OLD])
     except (TypeError, KeyError):
         print("No group is available")
     try:
-        contacts_no = len(data[COLNAMES_DF.CONTACTS])
+        contacts_no = len(data[COLNAMES_DF.CONTACTS_OLD])
     except (TypeError, KeyError):
         print("No contact is available")
 
@@ -131,12 +155,47 @@ def parse_zipfile_old_format(log_error, zfile):
     log_error("No Json file is available")
 
 
-def process(file_data):
+def prompt_file():
+    """Promt a file selection window in Eyra system
+                   Parameters
+                   ----------
+
+                   Returns
+                   -------
+                   Dictionary
+                       a prompt event - file type
+    """
+    return {
+        "cmd": "prompt",
+        "prompt": {
+            "type": "file",
+            "file": {
+                "title": {
+                    "en": "Step 1: Select the account info file",
+                    "nl": "Stap 1: Selecteer het account info file"
+                },
+                "description": {
+                    "en": "We previously asked you to export an acount info file from Whatsapp. "
+                          "Please select this file so we can extract relevant information "
+                          "for our research.",
+                    "nl": "We hebben u gevraagd een account info bestand te exporteren uit "
+                          "Whatsapp. U kunt dit bestand nu selecteren zodat wij er relevante "
+                          " informatie uit kunnen halen voor ons onderzoek."
+                },
+                "extensions": "application/zip",
+            }
+        }
+    }
+
+
+def process():
     """Main function for extracting account information"""
     errors = []
     log_error = errors.append
+    file_data = yield prompt_file()
     zfile = zipfile.ZipFile(file_data)  # pylint: disable=R1732
     try:
+
         data_groups, data_contacts = parse_zipfile(log_error, zfile)
 
         if data_groups is not None:
@@ -147,10 +206,9 @@ def process(file_data):
 
         if errors:
             return [format_errors(errors)]
+
     # Support old format of the account_info data package
-    except:  # pylint: disable= W0702
-        COLNAMES_DF.GROUPS = 'groups'  # pylint: disable=C0103
-        COLNAMES_DF.CONTACTS = 'contacts'  # pylint: disable=C0103
+    except UnboundLocalError:
         data = parse_zipfile_old_format(log_error, zfile)
         if data is not None:
             groups_no, contacts_no = extract_data(log_error, data)
@@ -158,7 +216,7 @@ def process(file_data):
         if errors:
             return [format_errors(errors)]
 
-    data_info = {'number_of_groups': [groups_no], 'number_of_contacts': [contacts_no]}
+    data_info = {COLNAMES_DF.GROUPS_OUTPUT: [groups_no], COLNAMES_DF.CONTACTS_OUTPUT: [contacts_no]}
     df_info = pd.DataFrame(data=data_info)
     formatted_results = format_results(df_info)
 
