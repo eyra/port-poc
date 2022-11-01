@@ -37,7 +37,7 @@ jobs:
 
       - name: Flake8
         working-directory: data_extractor
-        run: poetry run flake8 pylint whatsapp_chat whatsapp_account_info
+        run: poetry run flake8 whatsapp_chat whatsapp_account_info
 
       - name: Pytest
         working-directory: data_extractor      
