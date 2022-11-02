@@ -71,13 +71,13 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
                                   "Aantal locaties",
                                   "Op wie reageert u het meest?",
                                   "Wie reageert het meest op u?"],
-                      var_name='Description', value_name='Value')
+                      var_name='Omschrijving', value_name='Gegevens')
 
     usernames = sorted(set(df_melt["username"]))
     usernames.insert(0, usernames.pop(usernames.index('u')))
 
     for user in usernames:
-        df_user = df_melt[(df_melt["username"] == user) & df_melt["Value"] != 0]
+        df_user = df_melt[(df_melt["username"] == user) & df_melt["Gegevens"] != 0]
         results.append(df_user)
 
     expected_results = []
@@ -87,7 +87,7 @@ def process_data(filename: str, person_index: int) -> Tuple[pd.DataFrame, pd.Dat
             {
                 "id": user_name,  # "overview",
                 "title": user_name,  # "The following data is extracted from the file:",
-                "data_frame": df_chat[["Description", "Value"]].reset_index(drop=True)
+                "data_frame": df_chat[["Omschrijving", "Gegevens"]].reset_index(drop=True)
             }
         )
 
@@ -124,10 +124,10 @@ def test_process(filename: str, person_index: int, condition_index: int):
     # check whether the condition can be tested
     try:
         description, expected_value =\
-            tuple(df_expected_results[["Description", "Value"]].iloc[condition_index])
-        description_result, value = tuple(df_result[["Description", "Value"]].iloc[condition_index]) # pylint: disable=w0612
+            tuple(df_expected_results[["Omschrijving", "Value"]].iloc[condition_index])
+        description_result, value = tuple(df_result[["Omschrijving", "Gegevens"]].iloc[condition_index]) # pylint: disable=w0612
 
-    except: # pylint: disable=w0702
+    except:  # pylint: disable=w0702
 
         return
     assert value == expected_value, f"In {filename} for person {person_index}," \

@@ -433,7 +433,7 @@ def make_chat_df(log_error, text, hformat):
             log_error("Number of unprocessed system messages: " + str(alerts_no))
 
         return df_chat
-    except KeyError:
+    except (KeyError, AttributeError, ValueError):
         print(f"hformat : {hformat} is not match with the given text")
         return None
 
