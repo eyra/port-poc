@@ -188,10 +188,46 @@ def prompt_file():
     }
 
 
+def prompt_radio(usernames):
+    """Promt a list of items(usernames here) in Eyra system
+               This function shows a list of radio-buttons
+               Parameters
+               ----------
+               usernames: pandas.Series
+                   Extracted usernames from the chat file
+               Returns
+               -------
+               Dictionary
+                   a prompt event - radio type
+    """
+    return {
+        "cmd": "prompt",
+        "prompt": {
+            "type": "radio",
+            "radio": {
+                "title": {
+                    "en": "Step 2: Select your username",
+                    "nl": "Stap 2: Selecteer je gebruikersnaam"
+                },
+                "description": {
+                    "en": "The following users are extracted from the chat file. "
+                          "Which one are you?",
+                    "nl": "Geef hieronder aan welke gebruikersnaam van u is. "
+                          "Deze data wordt niet opgeslagen, maar alleen gebruikt om de juiste "
+                          "informatie uit uw data te kunnen halen."
+
+                },
+                "items": usernames,
+            }
+        }
+    }
+
+
 def process():
     """Main function for extracting account information"""
     errors = []
     log_error = errors.append
+
     file_data = yield prompt_file()
     zfile = zipfile.ZipFile(file_data)  # pylint: disable=R1732
     try:
@@ -205,7 +241,7 @@ def process():
             contacts_no = extract_contacts(log_error, data_contacts)
 
         if errors:
-            return [format_errors(errors)]
+            yield [format_errors(errors)]
 
     # Support old format of the account_info data package
     except UnboundLocalError:
@@ -214,10 +250,24 @@ def process():
             groups_no, contacts_no = extract_data(log_error, data)
 
         if errors:
-            return [format_errors(errors)]
+            yield [format_errors(errors)]
 
     data_info = {COLNAMES_DF.GROUPS_OUTPUT: [groups_no], COLNAMES_DF.CONTACTS_OUTPUT: [contacts_no]}
     df_info = pd.DataFrame(data=data_info)
     formatted_results = format_results(df_info)
 
-    return formatted_results
+    yield formatted_results
+
+
+from pathlib import Path
+file_to_test = '/Users/nadin001/surfdrive/its/datadonation-laura/port-poc/data_extractor/tests/data/My Account Info.zip'
+
+if __name__ == '__main__':
+    flow = process()
+
+    file_prompt = flow.send(None)
+    assert file_prompt["cmd"] == 'prompt'
+    assert file_prompt["prompt"]["type"] == 'file'
+
+    file_prompt = flow.send(str(file_to_test))
+    print(file_prompt[0]["data_frame"])
