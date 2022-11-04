@@ -257,17 +257,3 @@ def process():
     formatted_results = format_results(df_info)
 
     yield formatted_results
-
-
-from pathlib import Path
-file_to_test = '/Users/nadin001/surfdrive/its/datadonation-laura/port-poc/data_extractor/tests/data/My Account Info.zip'
-
-if __name__ == '__main__':
-    flow = process()
-
-    file_prompt = flow.send(None)
-    assert file_prompt["cmd"] == 'prompt'
-    assert file_prompt["prompt"]["type"] == 'file'
-
-    file_prompt = flow.send(str(file_to_test))
-    print(file_prompt[0]["data_frame"])
