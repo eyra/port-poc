@@ -883,7 +883,7 @@ def process():
         results = extract_results(participants_df, username)
         yield format_results(results, format_errors(errors))
 
-    return format_errors(errors)
+    yield format_results([], format_errors(errors))
 
 
 def prompt_file():
