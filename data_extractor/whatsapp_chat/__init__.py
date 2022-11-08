@@ -381,9 +381,11 @@ def make_df_general_regx(log_error, text):
 
             result.append(line_dict)
         except AttributeError:
-            log_error("Failed to read the Chat file.")
-            return None  # pass
+            pass
 
+    if len(result) == 0:
+        log_error("Failed to read the Chat file.")
+        return None
     df_chat = pd.DataFrame.from_records(result)
     df_chat = df_chat[[COLNAMES_DF.DATE, COLNAMES_DF.USERNAME, COLNAMES_DF.MESSAGE]]
 
@@ -882,8 +884,8 @@ def process():
         username = yield prompt_radio(usernames)
         results = extract_results(participants_df, username)
         yield format_results(results, format_errors(errors))
-
-    yield format_results([], format_errors(errors))
+    else:
+        yield format_results([], format_errors(errors))
 
 
 def prompt_file():

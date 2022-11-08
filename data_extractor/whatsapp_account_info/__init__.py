@@ -47,8 +47,16 @@ class DutchConst:  # pylint: disable=R0903
 DUTCH_CONST = DutchConst()
 
 
-def format_results(dataframe):
-    """Function for formatting results to the Eyra's standard format"""
+def format_results(dataframe, error):
+    """Format results to the standard format.
+    Parameters
+    ----------
+    dataframe: pandas.dataframe
+    error : list
+    Returns
+    -------
+    pandas.dataframe
+    """
     results = []
     results.append(
         {
@@ -57,14 +65,25 @@ def format_results(dataframe):
             "data_frame": dataframe
         }
     )
-    return results
+    if len(error) > 0:
+        results = results+error
+    return {"cmd": "result", "result": results}
 
 
 def format_errors(errors):
-    """ Function for formatting logging messages as a dataframe """
+    """Return errors in the format of dataframe.
+    Parameters
+    ----------
+    errors: list
+    Returns
+    -------
+    pandas.dataframe
+    """
+    if len(errors) == 0:
+        return []
     data_frame = pd.DataFrame()
     data_frame[DUTCH_CONST.DESCRIPTION] = pd.Series(errors, name=DUTCH_CONST.DESCRIPTION)
-    return {"id": "extraction_log", "title": DUTCH_CONST.LOG_TITLE, "data_frame": data_frame}
+    return [{"id": "extraction_log", "title": DUTCH_CONST.LOG_TITLE, "data_frame": data_frame}]
 
 
 def extract_groups(log_error, data):
@@ -241,7 +260,7 @@ def process():
             contacts_no = extract_contacts(log_error, data_contacts)
 
         if errors:
-            yield [format_errors(errors)]
+            yield format_results([], format_errors(errors))
 
     # Support old format of the account_info data package
     except UnboundLocalError:
@@ -250,10 +269,8 @@ def process():
             groups_no, contacts_no = extract_data(log_error, data)
 
         if errors:
-            yield [format_errors(errors)]
+            yield format_results([], format_errors(errors))
 
     data_info = {COLNAMES_DF.GROUPS_OUTPUT: [groups_no], COLNAMES_DF.CONTACTS_OUTPUT: [contacts_no]}
-    df_info = pd.DataFrame(data=data_info)
-    formatted_results = format_results(df_info)
-
-    yield formatted_results
+    results = pd.DataFrame(data=data_info)
+    yield format_results(results, format_errors(errors))
