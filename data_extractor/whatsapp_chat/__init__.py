@@ -823,7 +823,7 @@ def format_errors(errors):
     if len(errors) == 0:
         return []
     data_frame = pd.DataFrame()
-    data_frame["Omschrijving"] = pd.Series(errors, name="Omschrijving")
+    data_frame[COLNAMES_DF.DESCRIPTION] = pd.Series(errors, name=COLNAMES_DF.DESCRIPTION)
     return [{"id": "extraction_log", "title": DUTCH_CONST.PRE_MESSAGE, "data_frame": data_frame}]
 
 
