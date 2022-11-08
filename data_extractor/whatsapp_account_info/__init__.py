@@ -47,7 +47,6 @@ class DutchConst:  # pylint: disable=R0903
 DUTCH_CONST = DutchConst()
 
 
-
 def format_results(dataframe, error):
     """Format results to the standard format.
     Parameters
@@ -86,7 +85,6 @@ def format_errors(errors):
     data_frame = pd.DataFrame()
     data_frame[DUTCH_CONST.DESCRIPTION] = pd.Series(errors, name=DUTCH_CONST.DESCRIPTION)
     return [{"id": "extraction_log", "title": DUTCH_CONST.LOG_TITLE, "data_frame": data_frame}]
-
 
 
 def extract_groups(log_error, data):
@@ -210,7 +208,6 @@ def prompt_file():
     }
 
 
-
 def prompt_radio(usernames):
     """Promt a list of items(usernames here) in Eyra system
                This function shows a list of radio-buttons
@@ -278,4 +275,3 @@ def process():
     data_info = {COLNAMES_DF.GROUPS_OUTPUT: [groups_no], COLNAMES_DF.CONTACTS_OUTPUT: [contacts_no]}
     results = pd.DataFrame(data=data_info)
     yield format_results(results, format_errors(errors))
-

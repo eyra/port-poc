@@ -888,7 +888,6 @@ def process():
         yield format_results([], format_errors(errors))
 
 
-
 def prompt_file():
     """Promt a file selection window in Eyra system
                    Parameters
