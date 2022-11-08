@@ -39,4 +39,4 @@ def test_process(filename_to_test):
     assert file_prompt["prompt"]["type"] == 'file'
 
     file_prompt = flow.send(str(file_to_test))
-    assert_frame_equal(file_prompt[0]["data_frame"], df_expected)
+    assert_frame_equal(file_prompt["result"][0]['data_frame'], df_expected)
