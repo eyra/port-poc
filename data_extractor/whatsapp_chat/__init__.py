@@ -969,4 +969,4 @@ def extract_usernames(participants_df):
            pandas.Series
                Extracted usernames
     """
-    return participants_df[[COLNAMES_DF.USERNAME]]  # pylint: disable=C0302
+    return participants_df[COLNAMES_DF.USERNAME].tolist()  # pylint: disable=C0302

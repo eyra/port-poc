@@ -1,4 +1,4 @@
-""" Test script for the whatsapp_account_info script"""
+""" Test script for the whatsapp_chat script"""
 from pathlib import Path
 from typing import Tuple
 import itertools
