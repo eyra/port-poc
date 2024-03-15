@@ -1,3 +1,14 @@
+# Deprecated 
+![No Maintenance Intended](https://img.shields.io/maintenance/no/2022.svg)
+
+This repository was used as a proof-of-concept for data donation and described in the following paper:
+
+Boeschoten, L., Mendrik, A., van der Veen, E., Vloothuis, J., Hu, H., Voorvaart, R., & Oberski, D. L. (2022). [Privacy-preserving local analysis of digital trace data: A proof-of-concept](https://www.sciencedirect.com/science/article/pii/S2666389922000174). Patterns, 3(3).
+
+For the latest version of the data donation software visit the [feldspar repository](https://github.com/eyra/feldspar), which is used as part of the Port program for data donation. 
+
+---
+
 # Eyra Port POC
 
 ## Description
