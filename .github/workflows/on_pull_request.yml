@@ -19,7 +19,7 @@ jobs:
         uses: snok/install-poetry@v1.1.4
 
       - name: Cache Poetry installed packages
-        uses: actions/cache@v1
+        uses: actions/cache@v6
         id: cache
         with:
           path: .venv
