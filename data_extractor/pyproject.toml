@@ -7,7 +7,7 @@ authors = ["Jeroen Vloothuis <jeroen@9bitcat.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 pandas = "^1.2.4"
-pylint = "^2.8.2"
+pylint = "^4.0.0"
 Faker = "^8.11.0"
 numpy = "^1.21.1"
 geopy = "^2.2.0"
